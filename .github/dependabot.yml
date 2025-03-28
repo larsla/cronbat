@@ -1,0 +1,114 @@
+version: 2
+updates:
+  # Frontend npm dependencies
+  - package-ecosystem: "npm"
+    directory: "/frontend"
+    schedule:
+      interval: "weekly"
+    allow:
+      # Allow both direct and indirect updates for all packages
+      - dependency-type: "all"
+    commit-message:
+      prefix: "npm"
+      include: "scope"
+    # Auto-merge minor and patch updates
+    automerge: true
+    # Only create pull requests for major version updates
+    versioning-strategy: "auto"
+    # Specify assignees for pull requests
+    assignees:
+      - "larsla"
+    # Specify reviewers for pull requests
+    reviewers:
+      - "larsla"
+    # Group all updates together
+    groups:
+      minor-patch-dependencies:
+        update-types:
+          - "minor"
+          - "patch"
+      major-dependencies:
+        update-types:
+          - "major"
+
+  # Backend pip dependencies
+  - package-ecosystem: "pip"
+    directory: "/backend"
+    schedule:
+      interval: "weekly"
+    allow:
+      # Allow both direct and indirect updates for all packages
+      - dependency-type: "all"
+    commit-message:
+      prefix: "pip"
+      include: "scope"
+    # Auto-merge minor and patch updates
+    automerge: true
+    # Only create pull requests for major version updates
+    versioning-strategy: "auto"
+    # Specify assignees for pull requests
+    assignees:
+      - "larsla"
+    # Specify reviewers for pull requests
+    reviewers:
+      - "larsla"
+    # Group all updates together
+    groups:
+      minor-patch-dependencies:
+        update-types:
+          - "minor"
+          - "patch"
+      major-dependencies:
+        update-types:
+          - "major"
+
+  # Docker dependencies
+  - package-ecosystem: "docker"
+    directory: "/backend"
+    schedule:
+      interval: "weekly"
+    commit-message:
+      prefix: "docker"
+      include: "scope"
+    # Auto-merge minor and patch updates
+    automerge: true
+    # Specify assignees for pull requests
+    assignees:
+      - "larsla"
+    # Specify reviewers for pull requests
+    reviewers:
+      - "larsla"
+
+  # Docker dependencies for frontend
+  - package-ecosystem: "docker"
+    directory: "/frontend"
+    schedule:
+      interval: "weekly"
+    commit-message:
+      prefix: "docker"
+      include: "scope"
+    # Auto-merge minor and patch updates
+    automerge: true
+    # Specify assignees for pull requests
+    assignees:
+      - "larsla"
+    # Specify reviewers for pull requests
+    reviewers:
+      - "larsla"
+
+  # GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    commit-message:
+      prefix: "github-actions"
+      include: "scope"
+    # Auto-merge minor and patch updates
+    automerge: true
+    # Specify assignees for pull requests
+    assignees:
+      - "larsla"
+    # Specify reviewers for pull requests
+    reviewers:
+      - "larsla"
