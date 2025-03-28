@@ -255,8 +255,20 @@ function JobDetails() {
               onClick={async () => {
                 try {
                   await resumeJob(jobId);
+                  // Update job state locally
+                  setJob(prevJob => ({
+                    ...prevJob,
+                    is_paused: false
+                  }));
                 } catch (error) {
                   console.error('Failed to resume job:', error);
+                  // Try to refresh job data even if there's an error
+                  try {
+                    const updatedJob = await getJob(jobId);
+                    setJob(updatedJob);
+                  } catch (refreshError) {
+                    console.error('Failed to refresh job data:', refreshError);
+                  }
                 }
               }}
               className="px-4 py-2 rounded-md text-white font-medium bg-green-600 hover:bg-green-700"
@@ -268,8 +280,20 @@ function JobDetails() {
               onClick={async () => {
                 try {
                   await pauseJob(jobId);
+                  // Update job state locally
+                  setJob(prevJob => ({
+                    ...prevJob,
+                    is_paused: true
+                  }));
                 } catch (error) {
                   console.error('Failed to pause job:', error);
+                  // Try to refresh job data even if there's an error
+                  try {
+                    const updatedJob = await getJob(jobId);
+                    setJob(updatedJob);
+                  } catch (refreshError) {
+                    console.error('Failed to refresh job data:', refreshError);
+                  }
                 }
               }}
               className="px-4 py-2 rounded-md text-white font-medium bg-yellow-600 hover:bg-yellow-700"

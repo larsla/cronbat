@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { runJob, pauseJob, resumeJob } from '../services/api';
+import { runJob, pauseJob, resumeJob, getJob } from '../services/api';
 
 function JobCard({ job }) {
+  const [isPaused, setIsPaused] = useState(job.is_paused);
+
   const handleRunJob = async (e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -20,8 +22,16 @@ function JobCard({ job }) {
 
     try {
       await pauseJob(job.id);
+      setIsPaused(true);
     } catch (error) {
       console.error('Failed to pause job:', error);
+      // Try to refresh the job state
+      try {
+        const updatedJob = await getJob(job.id);
+        setIsPaused(updatedJob.is_paused);
+      } catch (refreshError) {
+        console.error('Failed to refresh job data:', refreshError);
+      }
     }
   };
 
@@ -31,8 +41,16 @@ function JobCard({ job }) {
 
     try {
       await resumeJob(job.id);
+      setIsPaused(false);
     } catch (error) {
       console.error('Failed to resume job:', error);
+      // Try to refresh the job state
+      try {
+        const updatedJob = await getJob(job.id);
+        setIsPaused(updatedJob.is_paused);
+      } catch (refreshError) {
+        console.error('Failed to refresh job data:', refreshError);
+      }
     }
   };
 
@@ -65,7 +83,7 @@ function JobCard({ job }) {
             </p>
           </div>
           <div className="flex items-center space-x-2">
-            {job.is_paused && (
+            {isPaused && (
               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
                 Paused
               </span>
@@ -100,7 +118,7 @@ function JobCard({ job }) {
               )}
             </div>
             <div className="flex space-x-2">
-              {job.is_paused ? (
+              {isPaused ? (
                 <button
                   onClick={handleResumeJob}
                   className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
@@ -117,9 +135,9 @@ function JobCard({ job }) {
               )}
               <button
                 onClick={handleRunJob}
-                disabled={job.is_paused}
+                disabled={isPaused}
                 className={`inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white ${
-                  job.is_paused
+                  isPaused
                     ? 'bg-gray-400 cursor-not-allowed'
                     : 'bg-cronbat-600 hover:bg-cronbat-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cronbat-500'
                 }`}
