@@ -49,12 +49,42 @@ export const deleteJob = async (jobId) => {
   }
 };
 
+export const updateJob = async (jobId, data) => {
+  try {
+    const response = await api.patch(`/jobs/${jobId}`, data);
+    return response.data;
+  } catch (error) {
+    console.error(`Error updating job ${jobId}:`, error);
+    throw error;
+  }
+};
+
 export const runJob = async (jobId) => {
   try {
     const response = await api.post(`/jobs/${jobId}/run`);
     return response.data;
   } catch (error) {
     console.error(`Error running job ${jobId}:`, error);
+    throw error;
+  }
+};
+
+export const pauseJob = async (jobId) => {
+  try {
+    const response = await api.post(`/jobs/${jobId}/pause`);
+    return response.data;
+  } catch (error) {
+    console.error(`Error pausing job ${jobId}:`, error);
+    throw error;
+  }
+};
+
+export const resumeJob = async (jobId) => {
+  try {
+    const response = await api.post(`/jobs/${jobId}/resume`);
+    return response.data;
+  } catch (error) {
+    console.error(`Error resuming job ${jobId}:`, error);
     throw error;
   }
 };

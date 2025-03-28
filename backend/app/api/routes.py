@@ -1,7 +1,7 @@
 from flask import jsonify, request
 from app.api import bp
 from app.scheduler import (
-    scheduler, get_jobs, get_job, add_job, remove_job, run_job,
+    scheduler, get_jobs, get_job, add_job, update_job, remove_job, run_job,
     get_job_logs, get_job_executions, get_all_executions, get_execution_log
 )
 
@@ -43,12 +43,40 @@ def delete_job(job_id):
         return jsonify({"message": "Job deleted"}), 200
     return jsonify({"error": "Job not found"}), 404
 
+@bp.route('/jobs/<job_id>', methods=['PATCH'])
+def update_job_route(job_id):
+    """Update job properties"""
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "No data provided"}), 400
+
+    success = update_job(job_id, data)
+    if success:
+        return jsonify({"message": "Job updated"}), 200
+    return jsonify({"error": "Job not found"}), 404
+
 @bp.route('/jobs/<job_id>/run', methods=['POST'])
 def trigger_job(job_id):
     """Manually trigger a job to run"""
     success = run_job(job_id)
     if success:
         return jsonify({"message": "Job triggered"}), 200
+    return jsonify({"error": "Job not found or is paused"}), 404
+
+@bp.route('/jobs/<job_id>/pause', methods=['POST'])
+def pause_job(job_id):
+    """Pause a job"""
+    success = update_job(job_id, {"is_paused": True})
+    if success:
+        return jsonify({"message": "Job paused"}), 200
+    return jsonify({"error": "Job not found"}), 404
+
+@bp.route('/jobs/<job_id>/resume', methods=['POST'])
+def resume_job(job_id):
+    """Resume a paused job"""
+    success = update_job(job_id, {"is_paused": False})
+    if success:
+        return jsonify({"message": "Job resumed"}), 200
     return jsonify({"error": "Job not found"}), 404
 
 @bp.route('/jobs/<job_id>/logs', methods=['GET'])

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useSocket } from '../contexts/SocketContext';
-import { getJob, getJobLogs, runJob, deleteJob } from '../services/api';
+import { getJob, getJobLogs, getJobExecutions, getExecutionLog, runJob, deleteJob, pauseJob, resumeJob } from '../services/api';
 import LogTerminal from '../components/LogTerminal';
 
 function JobDetails() {
@@ -10,24 +10,42 @@ function JobDetails() {
   const { socket, subscribeToJob } = useSocket();
 
   const [job, setJob] = useState(null);
-  const [logs, setLogs] = useState([]);
+  const [executions, setExecutions] = useState([]);
+  const [executionLogs, setExecutionLogs] = useState({});
   const [liveLog, setLiveLog] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // Fetch job details and logs
+  // Fetch job details and execution history
   useEffect(() => {
     const fetchJobDetails = async () => {
       try {
-        const [jobData, logsData] = await Promise.all([
+        const [jobData, executionsData] = await Promise.all([
           getJob(jobId),
-          getJobLogs(jobId)
+          getJobExecutions(jobId)
         ]);
 
         setJob(jobData);
-        setLogs(logsData);
+        setExecutions(executionsData);
         setLoading(false);
+
+        // Fetch logs for each execution
+        const logPromises = executionsData.map(async (execution) => {
+          try {
+            const logData = await getExecutionLog(jobId, execution.timestamp);
+            if (logData) {
+              setExecutionLogs(prev => ({
+                ...prev,
+                [execution.timestamp]: logData
+              }));
+            }
+          } catch (error) {
+            console.error(`Failed to fetch log for execution ${execution.timestamp}:`, error);
+          }
+        });
+
+        await Promise.all(logPromises);
       } catch (err) {
         console.error('Failed to fetch job details:', err);
         setError('Failed to load job details. Please try again later.');
@@ -69,8 +87,26 @@ function JobDetails() {
       // Listen for job completion
       socket.on('job_completed', (data) => {
         if (data.id === jobId) {
-          // Refresh logs after job completes
-          getJobLogs(jobId).then(setLogs).catch(console.error);
+          // Refresh executions and logs after job completes
+          getJobExecutions(jobId).then(newExecutions => {
+            setExecutions(newExecutions);
+
+            // Fetch log for the new execution
+            if (newExecutions.length > 0) {
+              const latestExecution = newExecutions[0]; // Assuming sorted by timestamp desc
+              getExecutionLog(jobId, latestExecution.timestamp)
+                .then(logData => {
+                  if (logData) {
+                    setExecutionLogs(prev => ({
+                      ...prev,
+                      [latestExecution.timestamp]: logData
+                    }));
+                  }
+                })
+                .catch(console.error);
+            }
+          }).catch(console.error);
+
           // Clear live logs
           setLiveLog([]);
         }
@@ -190,13 +226,47 @@ function JobDetails() {
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">{job.name}</h1>
+        <div className="flex items-center">
+          <h1 className="text-2xl font-bold text-gray-900">{job.name}</h1>
+          {job.is_paused && (
+            <span className="ml-3 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+              Paused
+            </span>
+          )}
+        </div>
         <div className="flex space-x-4">
+          {job.is_paused ? (
+            <button
+              onClick={async () => {
+                try {
+                  await resumeJob(jobId);
+                } catch (error) {
+                  console.error('Failed to resume job:', error);
+                }
+              }}
+              className="px-4 py-2 rounded-md text-white font-medium bg-green-600 hover:bg-green-700"
+            >
+              Resume Job
+            </button>
+          ) : (
+            <button
+              onClick={async () => {
+                try {
+                  await pauseJob(jobId);
+                } catch (error) {
+                  console.error('Failed to pause job:', error);
+                }
+              }}
+              className="px-4 py-2 rounded-md text-white font-medium bg-yellow-600 hover:bg-yellow-700"
+            >
+              Pause Job
+            </button>
+          )}
           <button
             onClick={handleRunJob}
-            disabled={job.state === 'running'}
+            disabled={job.state === 'running' || job.is_paused}
             className={`px-4 py-2 rounded-md text-white font-medium ${
-              job.state === 'running'
+              job.state === 'running' || job.is_paused
                 ? 'bg-gray-400 cursor-not-allowed'
                 : 'bg-cronbat-600 hover:bg-cronbat-700'
             }`}
@@ -254,7 +324,7 @@ function JobDetails() {
                   <span className="text-sm font-medium text-gray-500">
                     Current State:
                   </span>
-                  <p className="mt-1">
+                  <p className="mt-1 flex items-center space-x-2">
                     <span
                       className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStateColor(
                         job.state
@@ -262,6 +332,11 @@ function JobDetails() {
                     >
                       {job.state}
                     </span>
+                    {job.is_paused && (
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                        Paused
+                      </span>
+                    )}
                   </p>
                 </div>
                 {job.last_run && (
@@ -292,7 +367,80 @@ function JobDetails() {
 
       <div className="mb-6">
         <h2 className="text-lg font-medium text-gray-900 mb-4">Logs</h2>
-        <LogTerminal logs={logs} liveLog={liveLog} />
+        {job.state === 'running' ? (
+          // Show live logs when job is running
+          <LogTerminal logs={[]} liveLog={liveLog} />
+        ) : (
+          // Show logs from the most recent execution
+          executions.length > 0 && executionLogs[executions[0].timestamp] ? (
+            <LogTerminal
+              logs={[executionLogs[executions[0].timestamp]]}
+              liveLog={[]}
+            />
+          ) : (
+            <LogTerminal logs={[]} liveLog={[]} />
+          )
+        )}
+
+        {executions.length > 1 && (
+          <div className="mt-4">
+            <h3 className="text-md font-medium text-gray-900 mb-2">Previous Executions</h3>
+            <div className="bg-white rounded-lg shadow overflow-hidden">
+              <div className="divide-y divide-gray-200 max-h-60 overflow-y-auto">
+                {executions.slice(1).map((execution) => (
+                  <div
+                    key={execution.timestamp}
+                    className="px-4 py-3 hover:bg-gray-50 cursor-pointer"
+                    onClick={async () => {
+                      if (!executionLogs[execution.timestamp]) {
+                        try {
+                          const logData = await getExecutionLog(jobId, execution.timestamp);
+                          if (logData) {
+                            setExecutionLogs(prev => ({
+                              ...prev,
+                              [execution.timestamp]: logData
+                            }));
+                          }
+                        } catch (error) {
+                          console.error(`Failed to fetch log for execution ${execution.timestamp}:`, error);
+                        }
+                      }
+
+                      // Update the displayed log
+                      setExecutions(prev => {
+                        const newExecutions = [...prev];
+                        const clickedIndex = newExecutions.findIndex(e => e.timestamp === execution.timestamp);
+                        if (clickedIndex > 0) {
+                          const clickedExecution = newExecutions.splice(clickedIndex, 1)[0];
+                          newExecutions.unshift(clickedExecution);
+                        }
+                        return newExecutions;
+                      });
+                    }}
+                  >
+                    <div className="flex justify-between items-center">
+                      <div className="text-sm text-gray-900">
+                        {new Date(execution.timestamp).toLocaleString()}
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <span
+                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStateColor(
+                            execution.state
+                          )}`}
+                        >
+                          {execution.state}
+                        </span>
+                        <span className="text-xs text-gray-500">
+                          {execution.duration ? `${execution.duration.toFixed(1)}s` : ''}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

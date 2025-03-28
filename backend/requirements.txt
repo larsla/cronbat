@@ -5,3 +5,4 @@ python-dotenv==1.0.0
 apscheduler==3.10.4
 gunicorn==21.2.0
 eventlet==0.33.3
+SQLAlchemy==2.0.23

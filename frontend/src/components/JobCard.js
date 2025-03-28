@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { runJob } from '../services/api';
+import { runJob, pauseJob, resumeJob } from '../services/api';
 
 function JobCard({ job }) {
   const handleRunJob = async (e) => {
@@ -11,6 +11,28 @@ function JobCard({ job }) {
       await runJob(job.id);
     } catch (error) {
       console.error('Failed to run job:', error);
+    }
+  };
+
+  const handlePauseJob = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    try {
+      await pauseJob(job.id);
+    } catch (error) {
+      console.error('Failed to pause job:', error);
+    }
+  };
+
+  const handleResumeJob = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    try {
+      await resumeJob(job.id);
+    } catch (error) {
+      console.error('Failed to resume job:', error);
     }
   };
 
@@ -42,13 +64,20 @@ function JobCard({ job }) {
               {job.command}
             </p>
           </div>
-          <span
-            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStateColor(
-              job.state
-            )}`}
-          >
-            {job.state}
-          </span>
+          <div className="flex items-center space-x-2">
+            {job.is_paused && (
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                Paused
+              </span>
+            )}
+            <span
+              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStateColor(
+                job.state
+              )}`}
+            >
+              {job.state}
+            </span>
+          </div>
         </div>
 
         <div className="mt-4 text-sm text-gray-500">
@@ -70,12 +99,34 @@ function JobCard({ job }) {
                 </p>
               )}
             </div>
-            <button
-              onClick={handleRunJob}
-              className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-cronbat-600 hover:bg-cronbat-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cronbat-500"
-            >
-              Run Now
-            </button>
+            <div className="flex space-x-2">
+              {job.is_paused ? (
+                <button
+                  onClick={handleResumeJob}
+                  className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                >
+                  Resume
+                </button>
+              ) : (
+                <button
+                  onClick={handlePauseJob}
+                  className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-yellow-600 hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500"
+                >
+                  Pause
+                </button>
+              )}
+              <button
+                onClick={handleRunJob}
+                disabled={job.is_paused}
+                className={`inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white ${
+                  job.is_paused
+                    ? 'bg-gray-400 cursor-not-allowed'
+                    : 'bg-cronbat-600 hover:bg-cronbat-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cronbat-500'
+                }`}
+              >
+                Run Now
+              </button>
+            </div>
           </div>
         </div>
       </div>

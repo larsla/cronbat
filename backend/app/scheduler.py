@@ -7,33 +7,33 @@ from datetime import datetime
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 from flask_socketio import emit
-from app import socketio
+from app import socketio, db
 
 # Initialize the scheduler
 scheduler = BackgroundScheduler()
 scheduler.start()
 
-# Store for jobs and their metadata
-jobs = {}
-# Store for job logs
-job_logs = {}
-# Store for job execution state
+# In-memory cache for job states (not stored in DB)
 job_states = {}
-# Store for job execution history
-job_executions = {}
+# In-memory cache for live logs
+live_logs = {}
 
 def get_jobs():
     """Get all jobs with their metadata"""
     result = []
-    for job_id, metadata in jobs.items():
+    jobs = db.get_jobs()
+
+    for job in jobs:
+        job_id = job['id']
         job_info = {
             'id': job_id,
-            'name': metadata['name'],
-            'command': metadata['command'],
-            'schedule': metadata['schedule'],
-            'description': metadata.get('description', ''),
+            'name': job['name'],
+            'command': job['command'],
+            'schedule': job['schedule'],
+            'description': job.get('description', ''),
             'state': job_states.get(job_id, 'idle'),
-            'last_run': metadata.get('last_run'),
+            'last_run': job.get('last_run'),
+            'is_paused': job.get('is_paused', False),
             'next_run': None
         }
 
@@ -48,18 +48,19 @@ def get_jobs():
 
 def get_job(job_id):
     """Get a specific job by ID"""
-    if job_id not in jobs:
+    job = db.get_job(job_id)
+    if not job:
         return None
 
-    metadata = jobs[job_id]
     job_info = {
         'id': job_id,
-        'name': metadata['name'],
-        'command': metadata['command'],
-        'schedule': metadata['schedule'],
-        'description': metadata.get('description', ''),
+        'name': job['name'],
+        'command': job['command'],
+        'schedule': job['schedule'],
+        'description': job.get('description', ''),
         'state': job_states.get(job_id, 'idle'),
-        'last_run': metadata.get('last_run'),
+        'last_run': job.get('last_run'),
+        'is_paused': job.get('is_paused', False),
         'next_run': None
     }
 
@@ -74,20 +75,13 @@ def add_job(name, command, schedule, description=''):
     """Add a new job to the scheduler"""
     job_id = str(uuid.uuid4())
 
-    # Store job metadata
-    jobs[job_id] = {
-        'name': name,
-        'command': command,
-        'schedule': schedule,
-        'description': description,
-        'created_at': datetime.now().isoformat()
-    }
+    # Store job in database
+    db.add_job(job_id, name, command, schedule, description)
 
-    # Initialize job logs and executions
-    job_logs[job_id] = []
-    job_executions[job_id] = []
+    # Initialize live logs
+    live_logs[job_id] = []
 
-    # Schedule the job
+    # Schedule the job if not paused
     scheduler.add_job(
         execute_job,
         CronTrigger.from_crontab(schedule),
@@ -100,21 +94,71 @@ def add_job(name, command, schedule, description=''):
 
     return job_id
 
-def remove_job(job_id):
-    """Remove a job from the scheduler"""
-    if job_id not in jobs:
+def update_job(job_id, data):
+    """Update job properties"""
+    job = db.get_job(job_id)
+    if not job:
         return False
 
-    # Remove the job from the scheduler
-    scheduler.remove_job(job_id)
+    # Update job in database
+    success = db.update_job(job_id, data)
+    if not success:
+        return False
 
-    # Remove job metadata, logs, and executions
-    del jobs[job_id]
-    del job_logs[job_id]
+    # If schedule was updated, reschedule the job
+    if 'schedule' in data:
+        if job_id in scheduler.get_jobs():
+            scheduler.remove_job(job_id)
+
+        # Only reschedule if not paused
+        is_paused = data.get('is_paused', job.get('is_paused', False))
+        if not is_paused:
+            scheduler.add_job(
+                execute_job,
+                CronTrigger.from_crontab(data['schedule']),
+                id=job_id,
+                args=[job_id]
+            )
+
+    # If pause state changed
+    elif 'is_paused' in data:
+        if data['is_paused']:
+            # Pause job by removing from scheduler
+            if job_id in scheduler.get_jobs():
+                scheduler.remove_job(job_id)
+        else:
+            # Unpause job by adding back to scheduler
+            if job_id not in scheduler.get_jobs():
+                scheduler.add_job(
+                    execute_job,
+                    CronTrigger.from_crontab(job['schedule']),
+                    id=job_id,
+                    args=[job_id]
+                )
+
+    # Emit job updated event
+    socketio.emit('job_updated', get_job(job_id))
+
+    return True
+
+def remove_job(job_id):
+    """Remove a job from the scheduler"""
+    # Remove the job from the scheduler
+    try:
+        scheduler.remove_job(job_id)
+    except:
+        pass
+
+    # Remove job from database
+    success = db.remove_job(job_id)
+    if not success:
+        return False
+
+    # Clean up in-memory data
     if job_id in job_states:
         del job_states[job_id]
-    if job_id in job_executions:
-        del job_executions[job_id]
+    if job_id in live_logs:
+        del live_logs[job_id]
 
     # Emit job removed event
     socketio.emit('job_removed', {'id': job_id})
@@ -123,7 +167,12 @@ def remove_job(job_id):
 
 def run_job(job_id):
     """Manually trigger a job to run"""
-    if job_id not in jobs:
+    job = db.get_job(job_id)
+    if not job:
+        return False
+
+    # Don't run if job is paused
+    if job.get('is_paused', False):
         return False
 
     # Run the job in a separate thread
@@ -135,7 +184,8 @@ def run_job(job_id):
 
 def execute_job(job_id):
     """Execute a job and capture its output"""
-    if job_id not in jobs:
+    job = db.get_job(job_id)
+    if not job:
         return
 
     # Update job state to running
@@ -143,19 +193,15 @@ def execute_job(job_id):
     socketio.emit('job_state_changed', {'id': job_id, 'state': 'running'})
 
     # Get job command
-    command = jobs[job_id]['command']
+    command = job['command']
 
     # Record start time
     start_time = datetime.now()
-    jobs[job_id]['last_run'] = start_time.isoformat()
 
-    # Initialize log entry
-    log_entry = {
-        'timestamp': start_time.isoformat(),
-        'output': '',
-        'exit_code': None,
-        'duration': None
-    }
+    # Initialize log
+    log_output = ''
+    exit_code = None
+    duration = None
 
     try:
         # Execute the command
@@ -168,45 +214,42 @@ def execute_job(job_id):
             bufsize=1
         )
 
+        # Clear live logs
+        live_logs[job_id] = []
+
         # Stream output in real-time
         for line in iter(process.stdout.readline, ''):
-            log_entry['output'] += line
+            log_output += line
+            live_logs[job_id].append(line)
             socketio.emit('job_log', {'id': job_id, 'line': line})
 
         # Wait for process to complete
         exit_code = process.wait()
-        log_entry['exit_code'] = exit_code
 
         # Update job state based on exit code
         job_states[job_id] = 'success' if exit_code == 0 else 'failed'
 
     except Exception as e:
         # Handle execution errors
-        log_entry['output'] += f"Error executing job: {str(e)}\n"
-        log_entry['exit_code'] = -1
+        error_msg = f"Error executing job: {str(e)}\n"
+        log_output += error_msg
+        live_logs[job_id].append(error_msg)
+        socketio.emit('job_log', {'id': job_id, 'line': error_msg})
+        exit_code = -1
         job_states[job_id] = 'failed'
 
     # Calculate duration
     end_time = datetime.now()
     duration = (end_time - start_time).total_seconds()
-    log_entry['duration'] = duration
 
-    # Add log entry
-    job_logs[job_id].append(log_entry)
-
-    # Create execution history entry
-    execution_entry = {
-        'timestamp': start_time.isoformat(),
-        'state': job_states[job_id],
-        'exit_code': log_entry['exit_code'],
-        'duration': duration,
-        'log_id': id(log_entry)  # Use object id as a reference to the log
-    }
-
-    # Add execution entry to history
-    if job_id not in job_executions:
-        job_executions[job_id] = []
-    job_executions[job_id].append(execution_entry)
+    # Add execution record to database
+    db.add_execution(
+        job_id=job_id,
+        state=job_states[job_id],
+        exit_code=exit_code,
+        duration=duration,
+        log_content=log_output
+    )
 
     # Emit job state changed event
     socketio.emit('job_state_changed', {'id': job_id, 'state': job_states[job_id]})
@@ -214,56 +257,53 @@ def execute_job(job_id):
     # Emit job completed event
     socketio.emit('job_completed', {
         'id': job_id,
-        'exit_code': log_entry['exit_code'],
+        'exit_code': exit_code,
         'duration': duration
     })
 
 def get_job_logs(job_id, limit=10):
     """Get logs for a specific job"""
-    if job_id not in job_logs:
-        return None
-
-    # Return the most recent logs up to the limit
-    return sorted(job_logs[job_id], key=lambda x: x['timestamp'], reverse=True)[:limit]
+    return db.get_job_executions(job_id, limit)
 
 def get_job_executions(job_id, limit=10):
     """Get execution history for a specific job"""
-    if job_id not in job_executions:
-        return []
-
-    # Return the most recent executions up to the limit
-    return sorted(job_executions[job_id], key=lambda x: x['timestamp'], reverse=True)[:limit]
+    return db.get_job_executions(job_id, limit)
 
 def get_all_executions(limit=50):
     """Get execution history for all jobs"""
-    all_executions = []
+    return db.get_all_executions(limit)
 
-    for job_id, executions in job_executions.items():
-        for execution in executions:
-            # Add job name and id to each execution record
-            execution_with_job = execution.copy()
-            if job_id in jobs:
-                execution_with_job['job_name'] = jobs[job_id]['name']
-            execution_with_job['job_id'] = job_id
-            all_executions.append(execution_with_job)
+def get_execution_log(job_id, timestamp):
+    """Get log for a specific execution"""
+    return db.get_execution_log(job_id, timestamp)
 
-    # Sort by timestamp (newest first) and limit the results
-    return sorted(all_executions, key=lambda x: x['timestamp'], reverse=True)[:limit]
+def get_live_log(job_id):
+    """Get the current live log for a running job"""
+    if job_id in live_logs:
+        return live_logs[job_id]
+    return []
 
-def get_execution_log(job_id, execution_timestamp):
-    """Get the log for a specific execution"""
-    if job_id not in job_logs or job_id not in job_executions:
-        return None
+# Load jobs from database on startup
+def load_jobs_from_db():
+    """Load all jobs from the database and schedule them"""
+    jobs = db.get_jobs()
+    for job in jobs:
+        job_id = job['id']
 
-    # Find the execution entry
-    for execution in job_executions[job_id]:
-        if execution['timestamp'] == execution_timestamp:
-            # Find the corresponding log entry
-            for log in job_logs[job_id]:
-                if log['timestamp'] == execution_timestamp:
-                    return log
+        # Initialize live logs
+        live_logs[job_id] = []
 
-    return None
+        # Skip scheduling if job is paused
+        if job.get('is_paused', False):
+            continue
+
+        # Schedule the job
+        scheduler.add_job(
+            execute_job,
+            CronTrigger.from_crontab(job['schedule']),
+            id=job_id,
+            args=[job_id]
+        )
 
 # Socket.IO event handlers
 @socketio.on('connect')
@@ -276,6 +316,11 @@ def handle_connect():
 def handle_subscribe_to_job(data):
     """Handle job subscription"""
     job_id = data.get('id')
-    if job_id and job_id in jobs:
-        # Join the job's room
-        emit('job_details', get_job(job_id))
+    if job_id:
+        job = db.get_job(job_id)
+        if job:
+            # Join the job's room
+            emit('job_details', get_job(job_id))
+
+# Load jobs when the module is imported
+load_jobs_from_db()
