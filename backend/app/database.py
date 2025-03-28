@@ -391,6 +391,18 @@ class Database:
             parent_count = session.query(JobDependency).filter_by(child_job_id=job.id).count()
             child_count = session.query(JobDependency).filter_by(parent_job_id=job.id).count()
 
+            # Get parent jobs if this is a dependency-triggered job
+            parent_jobs = []
+            if job.trigger_type == 'dependency':
+                parent_dependencies = session.query(JobDependency).filter_by(child_job_id=job.id).all()
+                for dep in parent_dependencies:
+                    parent_job = session.query(Job).filter_by(id=dep.parent_job_id).first()
+                    if parent_job:
+                        parent_jobs.append({
+                            'id': parent_job.id,
+                            'name': parent_job.name
+                        })
+
             return {
                 'id': job.id,
                 'name': job.name,
@@ -402,7 +414,8 @@ class Database:
                 'is_paused': job.is_paused,
                 'trigger_type': job.trigger_type,
                 'parent_count': parent_count,
-                'child_count': child_count
+                'child_count': child_count,
+                'parent_jobs': parent_jobs if parent_jobs else None
             }
         finally:
             session.close()

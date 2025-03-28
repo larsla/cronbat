@@ -101,9 +101,16 @@ function JobCard({ job }) {
         <div className="mt-4 text-sm text-gray-500">
           <div className="flex justify-between items-center">
             <div>
-              <p>
-                <span className="font-medium">Schedule:</span> {job.schedule}
-              </p>
+              {job.trigger_type === 'dependency' ? (
+                <p>
+                  <span className="font-medium">Triggered by:</span>{' '}
+                  {job.parent_jobs ? job.parent_jobs.map(p => p.name).join(', ') : 'Other jobs'}
+                </p>
+              ) : (
+                <p>
+                  <span className="font-medium">Schedule:</span> {job.schedule}
+                </p>
+              )}
               {job.last_run && (
                 <p>
                   <span className="font-medium">Last Run:</span>{' '}

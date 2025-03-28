@@ -34,6 +34,8 @@ def get_jobs():
             'state': job_states.get(job_id, 'idle'),
             'last_run': job.get('last_run'),
             'is_paused': job.get('is_paused', False),
+            'trigger_type': job.get('trigger_type', 'schedule'),
+            'parent_jobs': job.get('parent_jobs', None),
             'next_run': None
         }
 
@@ -61,6 +63,8 @@ def get_job(job_id):
         'state': job_states.get(job_id, 'idle'),
         'last_run': job.get('last_run'),
         'is_paused': job.get('is_paused', False),
+        'trigger_type': job.get('trigger_type', 'schedule'),
+        'parent_jobs': job.get('parent_jobs', None),
         'next_run': None
     }
 

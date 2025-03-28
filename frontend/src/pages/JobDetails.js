@@ -460,12 +460,23 @@ function JobDetails() {
                       {job.command}
                     </p>
                   </div>
-                  <div>
-                    <span className="text-sm font-medium text-gray-500">
-                      Schedule:
-                    </span>
-                    <p className="mt-1 text-sm text-gray-900">{job.schedule}</p>
-                  </div>
+                  {job.trigger_type === 'dependency' ? (
+                    <div>
+                      <span className="text-sm font-medium text-gray-500">
+                        Triggered by:
+                      </span>
+                      <p className="mt-1 text-sm text-gray-900">
+                        {job.parent_jobs ? job.parent_jobs.map(p => p.name).join(', ') : 'Other jobs'}
+                      </p>
+                    </div>
+                  ) : (
+                    <div>
+                      <span className="text-sm font-medium text-gray-500">
+                        Schedule:
+                      </span>
+                      <p className="mt-1 text-sm text-gray-900">{job.schedule}</p>
+                    </div>
+                  )}
                   {job.description && (
                     <div>
                       <span className="text-sm font-medium text-gray-500">
