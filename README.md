@@ -9,6 +9,8 @@ CronBat is a web application for scheduling, running, and monitoring tasks. It p
 - Live streaming of task logs
 - Manual triggering of tasks
 - Responsive UI built with React and Tailwind CSS
+- Job dependencies - trigger jobs based on successful completion of other jobs
+- Visual workflow representation showing job dependencies
 
 ## Architecture
 
@@ -18,41 +20,13 @@ CronBat is a web application for scheduling, running, and monitoring tasks. It p
 
 ## Development Setup
 
-### Using Dev Container (Recommended)
-
-This project includes a devcontainer configuration for Visual Studio Code, which provides a consistent development environment with all the necessary tools pre-installed.
-
-#### Prerequisites
-
-- [Visual Studio Code](https://code.visualstudio.com/)
-- [Docker](https://www.docker.com/products/docker-desktop)
-- [VS Code Remote - Containers extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers)
-
-#### Steps
-
-1. Clone the repository
-2. Open the project in VS Code
-3. When prompted, click "Reopen in Container" or run the "Remote-Containers: Reopen in Container" command from the command palette
-4. VS Code will build the development container and open the project inside it
-5. Once the container is ready, you can:
-   - Run both servers at once: `.devcontainer/start-dev.sh`
-   - Or run them separately:
-     - Backend: `cd backend && python run.py`
-     - Frontend: `cd frontend && npm start`
-
-Both servers will start with hot-reload enabled, and the ports will be forwarded to your local machine (backend on port 5000, frontend on port 3000).
-
-### Manual Setup
-
-If you prefer not to use the devcontainer, you can set up the project manually:
-
-#### Prerequisites
+### Prerequisites
 
 - Python 3.8+
 - Node.js 16+
 - npm or yarn
 
-#### Backend Setup
+### Backend Setup
 
 1. Navigate to the backend directory:
    ```
@@ -77,7 +51,7 @@ If you prefer not to use the devcontainer, you can set up the project manually:
 
    The backend server will start at http://localhost:5000 with hot-reload enabled.
 
-#### Frontend Setup
+### Frontend Setup
 
 1. Navigate to the frontend directory:
    ```
@@ -104,7 +78,29 @@ The application can be deployed using Docker and Docker Compose:
 docker-compose up -d
 ```
 
-This will build and start both the frontend and backend services. The application will be available at http://localhost.
+This will pull the latest Docker images from GitHub Container Registry and start both the frontend and backend services. The application will be available at http://localhost.
+
+### Using a Specific Version
+
+By default, the `latest` tag is used for the Docker images. To use a specific version:
+
+1. Edit the `.env` file and change `CRONBAT_VERSION` to the desired version (e.g., `CRONBAT_VERSION=1.0.0`)
+2. Run `docker-compose up -d`
+
+### Building Images Locally
+
+If you prefer to build the images locally instead of using the pre-built ones:
+
+```
+docker-compose -f docker-compose.dev.yml up -d
+```
+
+### GitHub Container Registry
+
+Docker images are automatically built and published to GitHub Container Registry (ghcr.io) when a new release is created. The images are tagged with both the release version and `latest`.
+
+- Backend image: `ghcr.io/larsla/cronbat-backend`
+- Frontend image: `ghcr.io/larsla/cronbat-frontend`
 
 ## Environment Variables
 
