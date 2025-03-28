@@ -266,6 +266,28 @@ def execute_job(job_id):
         'duration': duration
     })
 
+    # If job was successful, trigger dependent jobs
+    if exit_code == 0:
+        trigger_dependent_jobs(job_id)
+
+def trigger_dependent_jobs(parent_job_id):
+    """Trigger jobs that depend on the successful completion of the parent job"""
+    dependent_jobs = db.get_dependent_jobs(parent_job_id)
+
+    for job in dependent_jobs:
+        # Run each dependent job in a separate thread
+        thread = threading.Thread(target=execute_job, args=[job['id']])
+        thread.daemon = True
+        thread.start()
+
+        # Log and emit event for the triggered job
+        info_msg = f"Job triggered by successful completion of job {parent_job_id}"
+        socketio.emit('job_triggered', {
+            'id': job['id'],
+            'parent_id': parent_job_id,
+            'message': info_msg
+        })
+
 def get_job_logs(job_id, limit=10):
     """Get logs for a specific job"""
     return db.get_job_executions(job_id, limit)

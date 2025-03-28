@@ -1,9 +1,13 @@
 import os
 from dotenv import load_dotenv
 from app import create_app, socketio
+import migrate_db
 
 # Load environment variables from .env file
 load_dotenv()
+
+# Run database migrations
+migrate_db.migrate_database()
 
 app = create_app()
 

@@ -7,19 +7,40 @@ from sqlalchemy.orm import sessionmaker, relationship
 
 Base = declarative_base()
 
+class JobDependency(Base):
+    __tablename__ = 'job_dependencies'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    parent_job_id = Column(String, ForeignKey('jobs.id', ondelete='CASCADE'), nullable=False)
+    child_job_id = Column(String, ForeignKey('jobs.id', ondelete='CASCADE'), nullable=False)
+
 class Job(Base):
     __tablename__ = 'jobs'
 
     id = Column(String, primary_key=True)
     name = Column(String, nullable=False)
     command = Column(String, nullable=False)
-    schedule = Column(String, nullable=False)
+    schedule = Column(String, nullable=True)  # Can be null if triggered by another job
     description = Column(Text)
     created_at = Column(DateTime, default=datetime.now)
     last_run = Column(DateTime, nullable=True)
     is_paused = Column(Boolean, default=False)
+    trigger_type = Column(String, default='schedule')  # 'schedule' or 'dependency'
 
     executions = relationship("Execution", back_populates="job", cascade="all, delete-orphan")
+
+    # Define relationships for dependencies
+    parent_dependencies = relationship("JobDependency",
+                                      foreign_keys=[JobDependency.child_job_id],
+                                      primaryjoin=(id == JobDependency.child_job_id),
+                                      cascade="all, delete-orphan",
+                                      backref="child_job")
+
+    child_dependencies = relationship("JobDependency",
+                                     foreign_keys=[JobDependency.parent_job_id],
+                                     primaryjoin=(id == JobDependency.parent_job_id),
+                                     cascade="all, delete-orphan",
+                                     backref="parent_job")
 
 class Execution(Base):
     __tablename__ = 'executions'
@@ -235,18 +256,156 @@ class Database:
         finally:
             session.close()
 
+    def add_job_dependency(self, parent_job_id, child_job_id):
+        """Add a dependency between two jobs"""
+        session = self.Session()
+        try:
+            # Check if both jobs exist
+            parent_job = session.query(Job).filter_by(id=parent_job_id).first()
+            child_job = session.query(Job).filter_by(id=child_job_id).first()
+
+            if not parent_job or not child_job:
+                return False
+
+            # Check if dependency already exists
+            existing_dependency = session.query(JobDependency).filter_by(
+                parent_job_id=parent_job_id,
+                child_job_id=child_job_id
+            ).first()
+
+            if existing_dependency:
+                return True  # Already exists
+
+            # Create new dependency
+            dependency = JobDependency(
+                parent_job_id=parent_job_id,
+                child_job_id=child_job_id
+            )
+
+            # Update child job to be dependency-triggered
+            child_job.trigger_type = 'dependency'
+
+            session.add(dependency)
+            session.commit()
+            return True
+        finally:
+            session.close()
+
+    def remove_job_dependency(self, parent_job_id, child_job_id):
+        """Remove a dependency between two jobs"""
+        session = self.Session()
+        try:
+            dependency = session.query(JobDependency).filter_by(
+                parent_job_id=parent_job_id,
+                child_job_id=child_job_id
+            ).first()
+
+            if not dependency:
+                return False
+
+            session.delete(dependency)
+
+            # Check if child job has any other parents
+            other_parents = session.query(JobDependency).filter_by(
+                child_job_id=child_job_id
+            ).count()
+
+            # If no other parents, update trigger type back to schedule
+            if other_parents == 0:
+                child_job = session.query(Job).filter_by(id=child_job_id).first()
+                if child_job:
+                    child_job.trigger_type = 'schedule'
+
+            session.commit()
+            return True
+        finally:
+            session.close()
+
+    def get_job_dependencies(self, job_id):
+        """Get all dependencies for a job"""
+        session = self.Session()
+        try:
+            job = session.query(Job).filter_by(id=job_id).first()
+            if not job:
+                return None
+
+            # Get parent jobs (jobs that trigger this job)
+            parents = []
+            for dep in job.parent_dependencies:
+                parent_job = session.query(Job).filter_by(id=dep.parent_job_id).first()
+                if parent_job:
+                    parents.append(self._job_to_dict(parent_job))
+
+            # Get child jobs (jobs triggered by this job)
+            children = []
+            for dep in job.child_dependencies:
+                child_job = session.query(Job).filter_by(id=dep.child_job_id).first()
+                if child_job:
+                    children.append(self._job_to_dict(child_job))
+
+            return {
+                'parents': parents,
+                'children': children
+            }
+        finally:
+            session.close()
+
+    def get_all_dependencies(self):
+        """Get all job dependencies"""
+        session = self.Session()
+        try:
+            dependencies = session.query(JobDependency).all()
+            result = []
+
+            for dep in dependencies:
+                result.append({
+                    'parent_job_id': dep.parent_job_id,
+                    'child_job_id': dep.child_job_id
+                })
+
+            return result
+        finally:
+            session.close()
+
+    def get_dependent_jobs(self, job_id):
+        """Get jobs that should be triggered when this job completes successfully"""
+        session = self.Session()
+        try:
+            dependencies = session.query(JobDependency).filter_by(parent_job_id=job_id).all()
+            result = []
+
+            for dep in dependencies:
+                child_job = session.query(Job).filter_by(id=dep.child_job_id).first()
+                if child_job and not child_job.is_paused:
+                    result.append(self._job_to_dict(child_job))
+
+            return result
+        finally:
+            session.close()
+
     def _job_to_dict(self, job):
         """Convert Job object to dictionary"""
-        return {
-            'id': job.id,
-            'name': job.name,
-            'command': job.command,
-            'schedule': job.schedule,
-            'description': job.description,
-            'created_at': job.created_at.isoformat() if job.created_at else None,
-            'last_run': job.last_run.isoformat() if job.last_run else None,
-            'is_paused': job.is_paused
-        }
+        session = self.Session()
+        try:
+            # Count dependencies
+            parent_count = session.query(JobDependency).filter_by(child_job_id=job.id).count()
+            child_count = session.query(JobDependency).filter_by(parent_job_id=job.id).count()
+
+            return {
+                'id': job.id,
+                'name': job.name,
+                'command': job.command,
+                'schedule': job.schedule,
+                'description': job.description,
+                'created_at': job.created_at.isoformat() if job.created_at else None,
+                'last_run': job.last_run.isoformat() if job.last_run else None,
+                'is_paused': job.is_paused,
+                'trigger_type': job.trigger_type,
+                'parent_count': parent_count,
+                'child_count': child_count
+            }
+        finally:
+            session.close()
 
     def _execution_to_dict(self, execution, include_job=False):
         """Convert Execution object to dictionary"""

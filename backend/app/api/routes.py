@@ -4,6 +4,7 @@ from app.scheduler import (
     scheduler, get_jobs, get_job, add_job, update_job, remove_job, run_job,
     get_job_logs, get_job_executions, get_all_executions, get_execution_log
 )
+from app import db
 
 @bp.route('/jobs', methods=['GET'])
 def get_all_jobs():
@@ -123,3 +124,47 @@ def execution_log(job_id, timestamp):
     if log is not None:
         return jsonify(log)
     return jsonify({"error": "Execution log not found"}), 404
+
+# Job Dependencies API
+
+@bp.route('/dependencies', methods=['GET'])
+def get_all_dependencies():
+    """Get all job dependencies"""
+    dependencies = db.get_all_dependencies()
+    return jsonify(dependencies)
+
+@bp.route('/jobs/<job_id>/dependencies', methods=['GET'])
+def get_job_dependencies(job_id):
+    """Get dependencies for a specific job"""
+    dependencies = db.get_job_dependencies(job_id)
+    if dependencies is not None:
+        return jsonify(dependencies)
+    return jsonify({"error": "Job not found"}), 404
+
+@bp.route('/dependencies', methods=['POST'])
+def create_dependency():
+    """Create a new dependency between jobs"""
+    data = request.get_json()
+
+    if not data or not all(k in data for k in ('parent_job_id', 'child_job_id')):
+        return jsonify({"error": "Missing required fields"}), 400
+
+    # Check for circular dependencies
+    if data['parent_job_id'] == data['child_job_id']:
+        return jsonify({"error": "Cannot create dependency to itself"}), 400
+
+    # Add the dependency
+    success = db.add_job_dependency(data['parent_job_id'], data['child_job_id'])
+
+    if success:
+        return jsonify({"message": "Dependency created"}), 201
+    return jsonify({"error": "Failed to create dependency"}), 400
+
+@bp.route('/dependencies/<parent_job_id>/<child_job_id>', methods=['DELETE'])
+def delete_dependency(parent_job_id, child_job_id):
+    """Delete a dependency between jobs"""
+    success = db.remove_job_dependency(parent_job_id, child_job_id)
+
+    if success:
+        return jsonify({"message": "Dependency removed"}), 200
+    return jsonify({"error": "Dependency not found"}), 404

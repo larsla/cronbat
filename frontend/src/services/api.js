@@ -129,4 +129,49 @@ export const getExecutionLog = async (jobId, timestamp) => {
   }
 };
 
+// Job Dependencies API
+
+export const getAllDependencies = async () => {
+  try {
+    const response = await api.get('/dependencies');
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching all dependencies:', error);
+    throw error;
+  }
+};
+
+export const getJobDependencies = async (jobId) => {
+  try {
+    const response = await api.get(`/jobs/${jobId}/dependencies`);
+    return response.data;
+  } catch (error) {
+    console.error(`Error fetching dependencies for job ${jobId}:`, error);
+    throw error;
+  }
+};
+
+export const createDependency = async (parentJobId, childJobId) => {
+  try {
+    const response = await api.post('/dependencies', {
+      parent_job_id: parentJobId,
+      child_job_id: childJobId
+    });
+    return response.data;
+  } catch (error) {
+    console.error(`Error creating dependency between jobs ${parentJobId} and ${childJobId}:`, error);
+    throw error;
+  }
+};
+
+export const deleteDependency = async (parentJobId, childJobId) => {
+  try {
+    const response = await api.delete(`/dependencies/${parentJobId}/${childJobId}`);
+    return response.data;
+  } catch (error) {
+    console.error(`Error deleting dependency between jobs ${parentJobId} and ${childJobId}:`, error);
+    throw error;
+  }
+};
+
 export default api;

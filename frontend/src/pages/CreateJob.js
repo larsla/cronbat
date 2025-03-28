@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { createJob } from '../services/api';
+import { createJob, getJobs, createDependency } from '../services/api';
 
 function CreateJob() {
   const navigate = useNavigate();
@@ -8,10 +8,30 @@ function CreateJob() {
     name: '',
     command: '',
     schedule: '',
-    description: ''
+    description: '',
+    trigger_type: 'schedule'
   });
+  const [selectedParentJobs, setSelectedParentJobs] = useState([]);
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [jobs, setJobs] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Fetch available jobs for dependencies
+  useEffect(() => {
+    const fetchJobs = async () => {
+      try {
+        const jobsData = await getJobs();
+        setJobs(jobsData);
+      } catch (error) {
+        console.error('Failed to fetch jobs:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchJobs();
+  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -27,6 +47,27 @@ function CreateJob() {
         [name]: null
       }));
     }
+
+    // Handle trigger type change
+    if (name === 'trigger_type') {
+      if (value === 'dependency') {
+        setFormData(prev => ({
+          ...prev,
+          schedule: ''
+        }));
+      }
+    }
+  };
+
+  const handleParentJobChange = (e) => {
+    const jobId = e.target.value;
+    const isChecked = e.target.checked;
+
+    if (isChecked) {
+      setSelectedParentJobs(prev => [...prev, jobId]);
+    } else {
+      setSelectedParentJobs(prev => prev.filter(id => id !== jobId));
+    }
   };
 
   const validateForm = () => {
@@ -40,10 +81,14 @@ function CreateJob() {
       newErrors.command = 'Command is required';
     }
 
-    if (!formData.schedule.trim()) {
-      newErrors.schedule = 'Schedule is required';
-    } else if (!isValidCronExpression(formData.schedule)) {
-      newErrors.schedule = 'Invalid cron expression';
+    if (formData.trigger_type === 'schedule') {
+      if (!formData.schedule.trim()) {
+        newErrors.schedule = 'Schedule is required for scheduled jobs';
+      } else if (!isValidCronExpression(formData.schedule)) {
+        newErrors.schedule = 'Invalid cron expression';
+      }
+    } else if (formData.trigger_type === 'dependency' && selectedParentJobs.length === 0) {
+      newErrors.parent_jobs = 'At least one parent job must be selected';
     }
 
     setErrors(newErrors);
@@ -66,8 +111,26 @@ function CreateJob() {
     setIsSubmitting(true);
 
     try {
-      const response = await createJob(formData);
-      navigate(`/jobs/${response.job_id}`);
+      // Create the job
+      const jobData = {
+        ...formData,
+        // If it's a dependency-triggered job, we don't need a schedule
+        schedule: formData.trigger_type === 'dependency' ? '0 0 31 2 *' : formData.schedule
+      };
+
+      const response = await createJob(jobData);
+      const newJobId = response.job_id;
+
+      // If it's a dependency-triggered job, create the dependencies
+      if (formData.trigger_type === 'dependency' && selectedParentJobs.length > 0) {
+        const dependencyPromises = selectedParentJobs.map(parentId =>
+          createDependency(parentId, newJobId)
+        );
+
+        await Promise.all(dependencyPromises);
+      }
+
+      navigate(`/jobs/${newJobId}`);
     } catch (error) {
       console.error('Failed to create job:', error);
       setErrors((prev) => ({
@@ -164,32 +227,113 @@ function CreateJob() {
               </div>
 
               <div>
-                <label
-                  htmlFor="schedule"
-                  className="block text-sm font-medium text-gray-700"
-                >
-                  Schedule (Cron Expression)
+                <label className="block text-sm font-medium text-gray-700">
+                  Trigger Type
                 </label>
-                <input
-                  type="text"
-                  name="schedule"
-                  id="schedule"
-                  value={formData.schedule}
-                  onChange={handleChange}
-                  className={`mt-1 block w-full rounded-md shadow-sm ${
-                    errors.schedule
-                      ? 'border-red-300 focus:border-red-500 focus:ring-red-500'
-                      : 'border-gray-300 focus:border-cronbat-500 focus:ring-cronbat-500'
-                  }`}
-                  placeholder="0 0 * * *"
-                />
-                <p className="mt-1 text-sm text-gray-500">
-                  Format: minute hour day-of-month month day-of-week
-                </p>
-                {errors.schedule && (
-                  <p className="mt-2 text-sm text-red-600">{errors.schedule}</p>
-                )}
+                <div className="mt-2 space-y-2">
+                  <div className="flex items-center">
+                    <input
+                      id="trigger-schedule"
+                      name="trigger_type"
+                      type="radio"
+                      value="schedule"
+                      checked={formData.trigger_type === 'schedule'}
+                      onChange={handleChange}
+                      className="h-4 w-4 text-cronbat-600 focus:ring-cronbat-500 border-gray-300"
+                    />
+                    <label htmlFor="trigger-schedule" className="ml-3 block text-sm font-medium text-gray-700">
+                      Schedule (Cron)
+                    </label>
+                  </div>
+                  <div className="flex items-center">
+                    <input
+                      id="trigger-dependency"
+                      name="trigger_type"
+                      type="radio"
+                      value="dependency"
+                      checked={formData.trigger_type === 'dependency'}
+                      onChange={handleChange}
+                      className="h-4 w-4 text-cronbat-600 focus:ring-cronbat-500 border-gray-300"
+                    />
+                    <label htmlFor="trigger-dependency" className="ml-3 block text-sm font-medium text-gray-700">
+                      After successful job execution
+                    </label>
+                  </div>
+                </div>
               </div>
+
+              {formData.trigger_type === 'schedule' && (
+                <div>
+                  <label
+                    htmlFor="schedule"
+                    className="block text-sm font-medium text-gray-700"
+                  >
+                    Schedule (Cron Expression)
+                  </label>
+                  <input
+                    type="text"
+                    name="schedule"
+                    id="schedule"
+                    value={formData.schedule}
+                    onChange={handleChange}
+                    className={`mt-1 block w-full rounded-md shadow-sm ${
+                      errors.schedule
+                        ? 'border-red-300 focus:border-red-500 focus:ring-red-500'
+                        : 'border-gray-300 focus:border-cronbat-500 focus:ring-cronbat-500'
+                    }`}
+                    placeholder="0 0 * * *"
+                  />
+                  <p className="mt-1 text-sm text-gray-500">
+                    Format: minute hour day-of-month month day-of-week
+                  </p>
+                  {errors.schedule && (
+                    <p className="mt-2 text-sm text-red-600">{errors.schedule}</p>
+                  )}
+                </div>
+              )}
+
+              {formData.trigger_type === 'dependency' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Run after successful completion of:
+                  </label>
+                  <div className="mt-2 border border-gray-300 rounded-md p-4 max-h-60 overflow-y-auto">
+                    {isLoading ? (
+                      <div className="text-center py-4">
+                        <svg className="animate-spin h-5 w-5 text-cronbat-500 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <p className="mt-2 text-sm text-gray-500">Loading jobs...</p>
+                      </div>
+                    ) : jobs.length === 0 ? (
+                      <p className="text-sm text-gray-500 py-2">No jobs available to select as dependencies.</p>
+                    ) : (
+                      <div className="space-y-2">
+                        {jobs.map(job => (
+                          <div key={job.id} className="flex items-start">
+                            <input
+                              id={`job-${job.id}`}
+                              type="checkbox"
+                              value={job.id}
+                              onChange={handleParentJobChange}
+                              checked={selectedParentJobs.includes(job.id)}
+                              className="h-4 w-4 text-cronbat-600 focus:ring-cronbat-500 border-gray-300 rounded mt-1"
+                            />
+                            <label htmlFor={`job-${job.id}`} className="ml-3 text-sm">
+                              <span className="font-medium text-gray-700">{job.name}</span>
+                              <p className="text-gray-500">{job.command}</p>
+                            </label>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  {errors.parent_jobs && (
+                    <p className="mt-2 text-sm text-red-600">{errors.parent_jobs}</p>
+                  )}
+                </div>
+              )}
 
               <div>
                 <label
