@@ -1,6 +1,9 @@
 from flask import jsonify, request
 from app.api import bp
-from app.scheduler import scheduler, get_jobs, get_job, add_job, remove_job, run_job, get_job_logs
+from app.scheduler import (
+    scheduler, get_jobs, get_job, add_job, remove_job, run_job,
+    get_job_logs, get_job_executions, get_all_executions, get_execution_log
+)
 
 @bp.route('/jobs', methods=['GET'])
 def get_all_jobs():
@@ -55,3 +58,23 @@ def job_logs(job_id):
     if logs is not None:
         return jsonify(logs)
     return jsonify({"error": "Job not found"}), 404
+
+@bp.route('/jobs/<job_id>/executions', methods=['GET'])
+def job_executions(job_id):
+    """Get execution history for a specific job"""
+    executions = get_job_executions(job_id)
+    return jsonify(executions)
+
+@bp.route('/executions', methods=['GET'])
+def all_executions():
+    """Get execution history for all jobs"""
+    executions = get_all_executions()
+    return jsonify(executions)
+
+@bp.route('/jobs/<job_id>/executions/<timestamp>/log', methods=['GET'])
+def execution_log(job_id, timestamp):
+    """Get log for a specific execution"""
+    log = get_execution_log(job_id, timestamp)
+    if log is not None:
+        return jsonify(log)
+    return jsonify({"error": "Execution log not found"}), 404

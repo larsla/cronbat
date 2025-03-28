@@ -19,6 +19,8 @@ jobs = {}
 job_logs = {}
 # Store for job execution state
 job_states = {}
+# Store for job execution history
+job_executions = {}
 
 def get_jobs():
     """Get all jobs with their metadata"""
@@ -81,8 +83,9 @@ def add_job(name, command, schedule, description=''):
         'created_at': datetime.now().isoformat()
     }
 
-    # Initialize job logs
+    # Initialize job logs and executions
     job_logs[job_id] = []
+    job_executions[job_id] = []
 
     # Schedule the job
     scheduler.add_job(
@@ -105,11 +108,13 @@ def remove_job(job_id):
     # Remove the job from the scheduler
     scheduler.remove_job(job_id)
 
-    # Remove job metadata and logs
+    # Remove job metadata, logs, and executions
     del jobs[job_id]
     del job_logs[job_id]
     if job_id in job_states:
         del job_states[job_id]
+    if job_id in job_executions:
+        del job_executions[job_id]
 
     # Emit job removed event
     socketio.emit('job_removed', {'id': job_id})
@@ -189,6 +194,20 @@ def execute_job(job_id):
     # Add log entry
     job_logs[job_id].append(log_entry)
 
+    # Create execution history entry
+    execution_entry = {
+        'timestamp': start_time.isoformat(),
+        'state': job_states[job_id],
+        'exit_code': log_entry['exit_code'],
+        'duration': duration,
+        'log_id': id(log_entry)  # Use object id as a reference to the log
+    }
+
+    # Add execution entry to history
+    if job_id not in job_executions:
+        job_executions[job_id] = []
+    job_executions[job_id].append(execution_entry)
+
     # Emit job state changed event
     socketio.emit('job_state_changed', {'id': job_id, 'state': job_states[job_id]})
 
@@ -206,6 +225,45 @@ def get_job_logs(job_id, limit=10):
 
     # Return the most recent logs up to the limit
     return sorted(job_logs[job_id], key=lambda x: x['timestamp'], reverse=True)[:limit]
+
+def get_job_executions(job_id, limit=10):
+    """Get execution history for a specific job"""
+    if job_id not in job_executions:
+        return []
+
+    # Return the most recent executions up to the limit
+    return sorted(job_executions[job_id], key=lambda x: x['timestamp'], reverse=True)[:limit]
+
+def get_all_executions(limit=50):
+    """Get execution history for all jobs"""
+    all_executions = []
+
+    for job_id, executions in job_executions.items():
+        for execution in executions:
+            # Add job name and id to each execution record
+            execution_with_job = execution.copy()
+            if job_id in jobs:
+                execution_with_job['job_name'] = jobs[job_id]['name']
+            execution_with_job['job_id'] = job_id
+            all_executions.append(execution_with_job)
+
+    # Sort by timestamp (newest first) and limit the results
+    return sorted(all_executions, key=lambda x: x['timestamp'], reverse=True)[:limit]
+
+def get_execution_log(job_id, execution_timestamp):
+    """Get the log for a specific execution"""
+    if job_id not in job_logs or job_id not in job_executions:
+        return None
+
+    # Find the execution entry
+    for execution in job_executions[job_id]:
+        if execution['timestamp'] == execution_timestamp:
+            # Find the corresponding log entry
+            for log in job_logs[job_id]:
+                if log['timestamp'] == execution_timestamp:
+                    return log
+
+    return None
 
 # Socket.IO event handlers
 @socketio.on('connect')

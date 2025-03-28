@@ -38,6 +38,16 @@ function Layout() {
                 >
                   Create Job
                 </Link>
+                <Link
+                  to="/executions"
+                  className={`px-3 py-2 rounded-md text-sm font-medium ${
+                    location.pathname === '/executions'
+                      ? 'bg-cronbat-800 text-white'
+                      : 'text-cronbat-100 hover:bg-cronbat-600'
+                  }`}
+                >
+                  Execution History
+                </Link>
               </div>
             </div>
             <div className="flex items-center">

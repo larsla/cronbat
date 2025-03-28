@@ -69,4 +69,34 @@ export const getJobLogs = async (jobId) => {
   }
 };
 
+export const getJobExecutions = async (jobId) => {
+  try {
+    const response = await api.get(`/jobs/${jobId}/executions`);
+    return response.data;
+  } catch (error) {
+    console.error(`Error fetching executions for job ${jobId}:`, error);
+    throw error;
+  }
+};
+
+export const getAllExecutions = async () => {
+  try {
+    const response = await api.get('/executions');
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching all executions:', error);
+    throw error;
+  }
+};
+
+export const getExecutionLog = async (jobId, timestamp) => {
+  try {
+    const response = await api.get(`/jobs/${jobId}/executions/${timestamp}/log`);
+    return response.data;
+  } catch (error) {
+    console.error(`Error fetching execution log for job ${jobId}:`, error);
+    throw error;
+  }
+};
+
 export default api;
