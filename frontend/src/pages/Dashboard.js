@@ -35,56 +35,66 @@ function Dashboard() {
     return map;
   }, {});
 
-  // Organize jobs into rows based on dependencies
+  // Group jobs by workflow (connected jobs)
   const organizeJobs = () => {
-    // Create a map of job IDs to their dependency level
-    const jobLevels = {};
-    const jobsWithParents = new Set();
+    // Create a map of parent-child relationships
+    const childToParent = {};
+    const parentToChildren = {};
 
-    // First, identify all jobs that are triggered by other jobs
     dependencies.forEach(dep => {
-      jobsWithParents.add(dep.child_job_id);
+      if (!childToParent[dep.child_job_id]) {
+        childToParent[dep.child_job_id] = [];
+      }
+      childToParent[dep.child_job_id].push(dep.parent_job_id);
+
+      if (!parentToChildren[dep.parent_job_id]) {
+        parentToChildren[dep.parent_job_id] = [];
+      }
+      parentToChildren[dep.parent_job_id].push(dep.child_job_id);
     });
 
-    // Jobs with no parents (level 0)
-    const rootJobs = jobs.filter(job => !jobsWithParents.has(job.id));
-    rootJobs.forEach(job => {
-      jobLevels[job.id] = 0;
+    // Find root jobs (jobs with no parents)
+    const rootJobs = jobs.filter(job => !childToParent[job.id] || childToParent[job.id].length === 0);
+
+    // Group jobs into workflows
+    const workflows = [];
+    const processedJobs = new Set();
+
+    // Process each root job and its children
+    rootJobs.forEach(rootJob => {
+      if (processedJobs.has(rootJob.id)) return;
+
+      const workflow = [rootJob.id];
+      processedJobs.add(rootJob.id);
+
+      // Add all children to the workflow
+      const addChildren = (parentId) => {
+        const children = parentToChildren[parentId] || [];
+        children.forEach(childId => {
+          if (!processedJobs.has(childId)) {
+            workflow.push(childId);
+            processedJobs.add(childId);
+            addChildren(childId);
+          }
+        });
+      };
+
+      addChildren(rootJob.id);
+      workflows.push(workflow);
     });
 
-    // Assign levels to the rest of the jobs
-    let changed = true;
-    while (changed) {
-      changed = false;
-      dependencies.forEach(dep => {
-        if (jobLevels[dep.parent_job_id] !== undefined && jobLevels[dep.child_job_id] === undefined) {
-          jobLevels[dep.child_job_id] = jobLevels[dep.parent_job_id] + 1;
-          changed = true;
-        }
-      });
-    }
-
-    // Group jobs by level
-    const rows = {};
-    Object.keys(jobLevels).forEach(jobId => {
-      const level = jobLevels[jobId];
-      if (!rows[level]) rows[level] = [];
-      rows[level].push(jobId);
-    });
-
-    // Add any remaining jobs to level 0
+    // Add any remaining jobs as individual workflows
     jobs.forEach(job => {
-      if (jobLevels[job.id] === undefined) {
-        if (!rows[0]) rows[0] = [];
-        rows[0].push(job.id);
-        jobLevels[job.id] = 0;
+      if (!processedJobs.has(job.id)) {
+        workflows.push([job.id]);
+        processedJobs.add(job.id);
       }
     });
 
-    return { rows, jobLevels };
+    return { workflows, parentToChildren };
   };
 
-  const { rows, jobLevels } = organizeJobs();
+  const { workflows, parentToChildren } = organizeJobs();
 
   // Render arrows between dependent jobs
   const renderArrows = () => {
@@ -94,32 +104,27 @@ function Dashboard() {
 
       if (!parentJob || !childJob) return null;
 
-      // Calculate positions based on job levels
-      const parentLevel = jobLevels[dep.parent_job_id];
-      const childLevel = jobLevels[dep.child_job_id];
-
-      // Only render arrows between adjacent levels for simplicity
-      if (childLevel - parentLevel !== 1) return null;
-
       return (
         <div
           key={`arrow-${index}`}
-          className="absolute border-t-2 border-cronbat-500"
-          style={{
-            left: '50%',
-            width: '50px',
-            top: `calc(${parentLevel * 200 + 100}px)`,
-            transform: 'translateX(-50%)'
-          }}
+          className="flex-shrink-0 w-8 h-8 flex items-center justify-center"
         >
-          <div
-            className="absolute w-0 h-0 border-l-8 border-l-transparent border-r-8 border-r-transparent border-t-8 border-cronbat-500"
-            style={{
-              right: '-8px',
-              top: '-4px',
-              transform: 'rotate(90deg)'
-            }}
-          />
+          <svg
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            className="text-cronbat-500"
+          >
+            <path
+              d="M5 12H19M19 12L13 6M19 12L13 18"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
         </div>
       );
     });
@@ -168,7 +173,7 @@ function Dashboard() {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Job Dashboard</h1>
         <Link
-          to="/jobs/create"
+          to="/jobs/new"
           className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-cronbat-600 hover:bg-cronbat-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cronbat-500"
         >
           Create New Job
@@ -197,7 +202,7 @@ function Dashboard() {
           </p>
           <div className="mt-6">
             <Link
-              to="/jobs/create"
+              to="/jobs/new"
               className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-cronbat-600 hover:bg-cronbat-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cronbat-500"
             >
               <svg
@@ -219,18 +224,44 @@ function Dashboard() {
         </div>
       ) : (
         <div className="relative">
-          {/* Render job dependency arrows */}
-          {dependencies.length > 0 && renderArrows()}
+          {/* We don't need the separate renderArrows function anymore since we're rendering arrows inline */}
 
-          {/* Render jobs by level */}
-          {Object.keys(rows).sort((a, b) => parseInt(a) - parseInt(b)).map(level => (
-            <div key={`level-${level}`} className="mb-8">
+          {/* Render jobs by workflow */}
+          {workflows.map((workflow, index) => (
+            <div key={`workflow-${index}`} className="mb-8">
               <h2 className="text-lg font-medium text-gray-700 mb-4">
-                {level === '0' ? 'Independent Jobs' : `Level ${level} Jobs`}
+                {workflow.length === 1 && (!parentToChildren[workflow[0]] || parentToChildren[workflow[0]].length === 0)
+                  ? 'Independent Jobs'
+                  : `Workflow ${index + 1}`}
               </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {rows[level].map(jobId => (
-                  <JobCard key={jobId} job={jobMap[jobId]} />
+              <div className="flex flex-wrap items-center">
+                {workflow.map((jobId, jobIndex) => (
+                  <React.Fragment key={jobId}>
+                    <div className="mb-4 mr-2">
+                      <JobCard job={jobMap[jobId]} />
+                    </div>
+                    {/* Add arrow if this job has children and it's not the last job */}
+                    {parentToChildren[jobId] && parentToChildren[jobId].length > 0 && jobIndex < workflow.length - 1 && (
+                      <div className="flex-shrink-0 w-8 h-8 flex items-center justify-center mb-4 mr-2">
+                        <svg
+                          width="24"
+                          height="24"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="text-cronbat-500"
+                        >
+                          <path
+                            d="M5 12H19M19 12L13 6M19 12L13 18"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
+                      </div>
+                    )}
+                  </React.Fragment>
                 ))}
               </div>
             </div>
