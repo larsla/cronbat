@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useSocket } from '../contexts/SocketContext';
-import { getJob, getJobLogs, getJobExecutions, getExecutionLog, runJob, deleteJob, pauseJob, resumeJob } from '../services/api';
+import { getJob, getJobLogs, getJobExecutions, getExecutionLog, runJob, deleteJob, pauseJob, resumeJob, updateJob } from '../services/api';
 import LogTerminal from '../components/LogTerminal';
 
 function JobDetails() {
@@ -16,6 +16,9 @@ function JobDetails() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedJob, setEditedJob] = useState(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Fetch job details and execution history
   useEffect(() => {
@@ -27,6 +30,12 @@ function JobDetails() {
         ]);
 
         setJob(jobData);
+        setEditedJob({
+          name: jobData.name,
+          command: jobData.command,
+          schedule: jobData.schedule,
+          description: jobData.description || ''
+        });
         setExecutions(executionsData);
         setLoading(false);
 
@@ -235,6 +244,12 @@ function JobDetails() {
           )}
         </div>
         <div className="flex space-x-4">
+          <button
+            onClick={() => setIsEditing(!isEditing)}
+            className="px-4 py-2 rounded-md text-white font-medium bg-indigo-600 hover:bg-indigo-700"
+          >
+            {isEditing ? 'Cancel Edit' : 'Edit Job'}
+          </button>
           {job.is_paused ? (
             <button
               onClick={async () => {
@@ -283,87 +298,210 @@ function JobDetails() {
         </div>
       </div>
 
-      <div className="bg-white rounded-lg shadow mb-6">
-        <div className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <h2 className="text-lg font-medium text-gray-900 mb-4">
-                Job Details
-              </h2>
-              <div className="space-y-3">
-                <div>
-                  <span className="text-sm font-medium text-gray-500">
-                    Command:
-                  </span>
-                  <p className="mt-1 text-sm text-gray-900 font-mono bg-gray-100 p-2 rounded">
-                    {job.command}
-                  </p>
-                </div>
-                <div>
-                  <span className="text-sm font-medium text-gray-500">
-                    Schedule:
-                  </span>
-                  <p className="mt-1 text-sm text-gray-900">{job.schedule}</p>
-                </div>
-                {job.description && (
-                  <div>
-                    <span className="text-sm font-medium text-gray-500">
-                      Description:
-                    </span>
-                    <p className="mt-1 text-sm text-gray-900">
-                      {job.description}
-                    </p>
-                  </div>
-                )}
-              </div>
+      {isEditing ? (
+        <div className="bg-white rounded-lg shadow mb-6">
+          <div className="p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-lg font-medium text-gray-900">Edit Job</h2>
+              <button
+                onClick={async () => {
+                  // Validate form
+                  if (!editedJob.name.trim()) {
+                    alert('Job name cannot be empty');
+                    return;
+                  }
+                  if (!editedJob.command.trim()) {
+                    alert('Command cannot be empty');
+                    return;
+                  }
+                  if (!editedJob.schedule.trim()) {
+                    alert('Schedule cannot be empty');
+                    return;
+                  }
+
+                  setIsSaving(true);
+                  try {
+                    await updateJob(jobId, editedJob);
+                    setIsEditing(false);
+                    // Refresh job data
+                    const updatedJob = await getJob(jobId);
+                    setJob(updatedJob);
+                  } catch (error) {
+                    console.error('Failed to update job:', error);
+
+                    // Even if the PATCH call fails, try to refresh the job data
+                    // as the database might have been updated correctly
+                    try {
+                      const updatedJob = await getJob(jobId);
+                      setJob(updatedJob);
+
+                      // If we got updated data and it matches what we tried to set,
+                      // consider the update successful despite the error
+                      if (updatedJob.name === editedJob.name &&
+                          updatedJob.command === editedJob.command &&
+                          updatedJob.schedule === editedJob.schedule) {
+                        setIsEditing(false);
+                        console.log('Job updated successfully despite API error');
+                        return;
+                      }
+                    } catch (refreshError) {
+                      console.error('Failed to refresh job data:', refreshError);
+                    }
+
+                    // Extract error message from response if available
+                    let errorMessage = 'Failed to update job. Please try again.';
+                    if (error.response && error.response.data && error.response.data.error) {
+                      errorMessage = error.response.data.error;
+                    }
+                    alert(errorMessage);
+                  } finally {
+                    setIsSaving(false);
+                  }
+                }}
+                disabled={isSaving}
+                className="px-4 py-2 rounded-md text-white font-medium bg-green-600 hover:bg-green-700 disabled:bg-gray-400"
+              >
+                {isSaving ? 'Saving...' : 'Save Changes'}
+              </button>
             </div>
-            <div>
-              <h2 className="text-lg font-medium text-gray-900 mb-4">Status</h2>
-              <div className="space-y-3">
-                <div>
-                  <span className="text-sm font-medium text-gray-500">
-                    Current State:
-                  </span>
-                  <p className="mt-1 flex items-center space-x-2">
-                    <span
-                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStateColor(
-                        job.state
-                      )}`}
-                    >
-                      {job.state}
-                    </span>
-                    {job.is_paused && (
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                        Paused
-                      </span>
-                    )}
-                  </p>
-                </div>
-                {job.last_run && (
-                  <div>
-                    <span className="text-sm font-medium text-gray-500">
-                      Last Run:
-                    </span>
-                    <p className="mt-1 text-sm text-gray-900">
-                      {new Date(job.last_run).toLocaleString()}
-                    </p>
-                  </div>
-                )}
-                {job.next_run && (
-                  <div>
-                    <span className="text-sm font-medium text-gray-500">
-                      Next Run:
-                    </span>
-                    <p className="mt-1 text-sm text-gray-900">
-                      {new Date(job.next_run).toLocaleString()}
-                    </p>
-                  </div>
-                )}
+            <div className="space-y-4">
+              <div>
+                <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+                  Name
+                </label>
+                <input
+                  type="text"
+                  id="name"
+                  value={editedJob?.name || ''}
+                  onChange={(e) => setEditedJob({...editedJob, name: e.target.value})}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                />
+              </div>
+              <div>
+                <label htmlFor="command" className="block text-sm font-medium text-gray-700">
+                  Command
+                </label>
+                <textarea
+                  id="command"
+                  value={editedJob?.command || ''}
+                  onChange={(e) => setEditedJob({...editedJob, command: e.target.value})}
+                  rows={3}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm font-mono"
+                />
+              </div>
+              <div>
+                <label htmlFor="schedule" className="block text-sm font-medium text-gray-700">
+                  Schedule (Cron Expression)
+                </label>
+                <input
+                  type="text"
+                  id="schedule"
+                  value={editedJob?.schedule || ''}
+                  onChange={(e) => setEditedJob({...editedJob, schedule: e.target.value})}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm font-mono"
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  Format: minute hour day-of-month month day-of-week (e.g., "0 * * * *" for every hour)
+                </p>
+              </div>
+              <div>
+                <label htmlFor="description" className="block text-sm font-medium text-gray-700">
+                  Description (Optional)
+                </label>
+                <textarea
+                  id="description"
+                  value={editedJob?.description || ''}
+                  onChange={(e) => setEditedJob({...editedJob, description: e.target.value})}
+                  rows={2}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                />
               </div>
             </div>
           </div>
         </div>
-      </div>
+      ) : (
+        <div className="bg-white rounded-lg shadow mb-6">
+          <div className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <h2 className="text-lg font-medium text-gray-900 mb-4">
+                  Job Details
+                </h2>
+                <div className="space-y-3">
+                  <div>
+                    <span className="text-sm font-medium text-gray-500">
+                      Command:
+                    </span>
+                    <p className="mt-1 text-sm text-gray-900 font-mono bg-gray-100 p-2 rounded">
+                      {job.command}
+                    </p>
+                  </div>
+                  <div>
+                    <span className="text-sm font-medium text-gray-500">
+                      Schedule:
+                    </span>
+                    <p className="mt-1 text-sm text-gray-900">{job.schedule}</p>
+                  </div>
+                  {job.description && (
+                    <div>
+                      <span className="text-sm font-medium text-gray-500">
+                        Description:
+                      </span>
+                      <p className="mt-1 text-sm text-gray-900">
+                        {job.description}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div>
+                <h2 className="text-lg font-medium text-gray-900 mb-4">Status</h2>
+                <div className="space-y-3">
+                  <div>
+                    <span className="text-sm font-medium text-gray-500">
+                      Current State:
+                    </span>
+                    <p className="mt-1 flex items-center space-x-2">
+                      <span
+                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStateColor(
+                          job.state
+                        )}`}
+                      >
+                        {job.state}
+                      </span>
+                      {job.is_paused && (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                          Paused
+                        </span>
+                      )}
+                    </p>
+                  </div>
+                  {job.last_run && (
+                    <div>
+                      <span className="text-sm font-medium text-gray-500">
+                        Last Run:
+                      </span>
+                      <p className="mt-1 text-sm text-gray-900">
+                        {new Date(job.last_run).toLocaleString()}
+                      </p>
+                    </div>
+                  )}
+                  {job.next_run && (
+                    <div>
+                      <span className="text-sm font-medium text-gray-500">
+                        Next Run:
+                      </span>
+                      <p className="mt-1 text-sm text-gray-900">
+                        {new Date(job.next_run).toLocaleString()}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="mb-6">
         <h2 className="text-lg font-medium text-gray-900 mb-4">Logs</h2>

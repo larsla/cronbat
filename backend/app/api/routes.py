@@ -50,10 +50,27 @@ def update_job_route(job_id):
     if not data:
         return jsonify({"error": "No data provided"}), 400
 
+    # Check if job exists first
+    job = get_job(job_id)
+    if not job:
+        return jsonify({"error": "Job not found"}), 404
+
+    # Validate name if it's being updated
+    if 'name' in data and data['name'] != job['name']:
+        # Check if name is empty
+        if not data['name'].strip():
+            return jsonify({"error": "Job name cannot be empty"}), 400
+
+        # Check if name is already taken by another job
+        all_jobs = get_jobs()
+        for existing_job in all_jobs:
+            if existing_job['id'] != job_id and existing_job['name'] == data['name']:
+                return jsonify({"error": "A job with this name already exists"}), 400
+
     success = update_job(job_id, data)
     if success:
         return jsonify({"message": "Job updated"}), 200
-    return jsonify({"error": "Job not found"}), 404
+    return jsonify({"error": "Failed to update job"}), 500
 
 @bp.route('/jobs/<job_id>/run', methods=['POST'])
 def trigger_job(job_id):

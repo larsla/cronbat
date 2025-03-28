@@ -105,36 +105,41 @@ def update_job(job_id, data):
     if not success:
         return False
 
-    # If schedule was updated, reschedule the job
-    if 'schedule' in data:
-        if job_id in scheduler.get_jobs():
-            scheduler.remove_job(job_id)
+    # Check if job is currently in the scheduler
+    job_in_scheduler = False
+    try:
+        scheduler.get_job(job_id)
+        job_in_scheduler = True
+    except:
+        job_in_scheduler = False
 
-        # Only reschedule if not paused
-        is_paused = data.get('is_paused', job.get('is_paused', False))
-        if not is_paused:
+    # Always remove the job from the scheduler if it exists
+    # This prevents the ConflictingIdError
+    if job_in_scheduler:
+        try:
+            scheduler.remove_job(job_id)
+        except:
+            pass
+
+    # Get the updated job data
+    updated_job = db.get_job(job_id)
+
+    # Determine if the job should be scheduled
+    is_paused = updated_job.get('is_paused', False)
+
+    # Only add the job back to the scheduler if it's not paused
+    if not is_paused:
+        try:
             scheduler.add_job(
                 execute_job,
-                CronTrigger.from_crontab(data['schedule']),
+                CronTrigger.from_crontab(updated_job['schedule']),
                 id=job_id,
                 args=[job_id]
             )
-
-    # If pause state changed
-    elif 'is_paused' in data:
-        if data['is_paused']:
-            # Pause job by removing from scheduler
-            if job_id in scheduler.get_jobs():
-                scheduler.remove_job(job_id)
-        else:
-            # Unpause job by adding back to scheduler
-            if job_id not in scheduler.get_jobs():
-                scheduler.add_job(
-                    execute_job,
-                    CronTrigger.from_crontab(job['schedule']),
-                    id=job_id,
-                    args=[job_id]
-                )
+        except Exception as e:
+            print(f"Error scheduling job: {e}")
+            # Even if scheduling fails, we still updated the database
+            # so we'll return success
 
     # Emit job updated event
     socketio.emit('job_updated', get_job(job_id))

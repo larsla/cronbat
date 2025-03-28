@@ -97,8 +97,22 @@ class Database:
             if not job:
                 return False
 
+            # Make a copy of data to avoid modifying the original
+            update_data = data.copy()
+
+            # Remove id field if present to prevent primary key changes
+            if 'id' in update_data:
+                del update_data['id']
+
+            # Check if name is being changed and if it would conflict with another job
+            if 'name' in update_data and update_data['name'] != job.name:
+                # Check if another job with the same name exists
+                existing_job = session.query(Job).filter(Job.name == update_data['name'], Job.id != job_id).first()
+                if existing_job:
+                    return False
+
             # Update fields that are present in data
-            for key, value in data.items():
+            for key, value in update_data.items():
                 if hasattr(job, key):
                     setattr(job, key, value)
 
