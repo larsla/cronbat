@@ -2,6 +2,8 @@
 
 CronBat is a web application for scheduling, running, and monitoring tasks. It provides a user-friendly interface to manage scheduled tasks, view their execution state in real-time, and stream logs.
 
+> **Note:** This project was built with [Cline](https://github.com/saoudrizwan/cline) and Claude-3.7-sonnet as an experiment in AI-assisted development.
+
 ## Features
 
 - Create and manage scheduled tasks with cron expressions
@@ -115,6 +117,15 @@ Docker images are automatically built and published to GitHub Container Registry
 
 - `REACT_APP_API_URL`: URL of the backend API
 - `REACT_APP_SOCKET_URL`: URL for WebSocket connection
+
+## Dependency Management
+
+This project uses GitHub's Dependabot to automatically keep dependencies up-to-date:
+
+- Minor and patch updates are automatically merged
+- Major version updates create pull requests for review
+- Dependencies are checked weekly
+- Updates are grouped to minimize disruption
 
 ## License
 
