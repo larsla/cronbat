@@ -135,7 +135,7 @@ function Dashboard() {
       <div className="flex justify-center items-center h-64">
         <div className="animate-pulse flex flex-col items-center">
           <div className="h-12 w-12 bg-cronbat-500 rounded-full"></div>
-          <div className="mt-4 text-cronbat-700">Loading jobs...</div>
+          <div className="mt-4 text-cronbat-700 dark:text-cronbat-300">Loading jobs...</div>
         </div>
       </div>
     );
@@ -143,11 +143,11 @@ function Dashboard() {
 
   if (error) {
     return (
-      <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded">
+      <div className="bg-red-50 dark:bg-red-900 border-l-4 border-red-500 p-4 rounded">
         <div className="flex">
           <div className="flex-shrink-0">
             <svg
-              className="h-5 w-5 text-red-500"
+              className="h-5 w-5 text-red-500 dark:text-red-300"
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 20 20"
               fill="currentColor"
@@ -161,7 +161,7 @@ function Dashboard() {
             </svg>
           </div>
           <div className="ml-3">
-            <p className="text-sm text-red-700">{error}</p>
+            <p className="text-sm text-red-700 dark:text-red-200">{error}</p>
           </div>
         </div>
       </div>
@@ -171,7 +171,7 @@ function Dashboard() {
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Job Dashboard</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Job Dashboard</h1>
         <Link
           to="/jobs/new"
           className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-cronbat-600 hover:bg-cronbat-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cronbat-500"
@@ -181,9 +181,9 @@ function Dashboard() {
       </div>
 
       {jobs.length === 0 ? (
-        <div className="bg-white rounded-lg shadow p-6 text-center">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 text-center">
           <svg
-            className="mx-auto h-12 w-12 text-gray-400"
+            className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -196,8 +196,8 @@ function Dashboard() {
               d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
             />
           </svg>
-          <h3 className="mt-2 text-sm font-medium text-gray-900">No jobs</h3>
-          <p className="mt-1 text-sm text-gray-500">
+          <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">No jobs</h3>
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
             Get started by creating a new job.
           </p>
           <div className="mt-6">
@@ -229,7 +229,7 @@ function Dashboard() {
           {/* Render jobs by workflow */}
           {workflows.map((workflow, index) => (
             <div key={`workflow-${index}`} className="mb-8">
-              <h2 className="text-lg font-medium text-gray-700 mb-4">
+              <h2 className="text-lg font-medium text-gray-700 dark:text-gray-300 mb-4">
                 {workflow.length === 1 && (!parentToChildren[workflow[0]] || parentToChildren[workflow[0]].length === 0)
                   ? 'Independent Jobs'
                   : `Workflow ${index + 1}`}
