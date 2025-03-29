@@ -222,13 +222,13 @@ function JobDetails() {
   const getStateColor = (state) => {
     switch (state) {
       case 'running':
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
       case 'success':
-        return 'bg-green-100 text-green-800';
+        return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
       case 'failed':
-        return 'bg-red-100 text-red-800';
+        return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
     }
   };
 
@@ -236,7 +236,7 @@ function JobDetails() {
     <div>
       <div className="flex justify-between items-center mb-6">
         <div className="flex items-center">
-          <h1 className="text-2xl font-bold text-gray-900">{job.name}</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{job.name}</h1>
           {job.is_paused && (
             <span className="ml-3 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
               Paused
@@ -444,45 +444,45 @@ function JobDetails() {
           </div>
         </div>
       ) : (
-        <div className="bg-white rounded-lg shadow mb-6">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow mb-6">
           <div className="p-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <h2 className="text-lg font-medium text-gray-900 mb-4">
+                <h2 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
                   Job Details
                 </h2>
                 <div className="space-y-3">
                   <div>
-                    <span className="text-sm font-medium text-gray-500">
+                    <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
                       Command:
                     </span>
-                    <p className="mt-1 text-sm text-gray-900 font-mono bg-gray-100 p-2 rounded">
+                    <p className="mt-1 text-sm text-gray-900 dark:text-gray-300 font-mono bg-gray-100 dark:bg-gray-700 p-2 rounded">
                       {job.command}
                     </p>
                   </div>
                   {job.trigger_type === 'dependency' ? (
                     <div>
-                      <span className="text-sm font-medium text-gray-500">
+                      <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
                         Triggered by:
                       </span>
-                      <p className="mt-1 text-sm text-gray-900">
+                      <p className="mt-1 text-sm text-gray-900 dark:text-gray-300">
                         {job.parent_jobs ? job.parent_jobs.map(p => p.name).join(', ') : 'Other jobs'}
                       </p>
                     </div>
                   ) : (
                     <div>
-                      <span className="text-sm font-medium text-gray-500">
+                      <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
                         Schedule:
                       </span>
-                      <p className="mt-1 text-sm text-gray-900">{job.schedule}</p>
+                      <p className="mt-1 text-sm text-gray-900 dark:text-gray-300">{job.schedule}</p>
                     </div>
                   )}
                   {job.description && (
                     <div>
-                      <span className="text-sm font-medium text-gray-500">
+                      <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
                         Description:
                       </span>
-                      <p className="mt-1 text-sm text-gray-900">
+                      <p className="mt-1 text-sm text-gray-900 dark:text-gray-300">
                         {job.description}
                       </p>
                     </div>
@@ -490,10 +490,10 @@ function JobDetails() {
                 </div>
               </div>
               <div>
-                <h2 className="text-lg font-medium text-gray-900 mb-4">Status</h2>
+                <h2 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Status</h2>
                 <div className="space-y-3">
                   <div>
-                    <span className="text-sm font-medium text-gray-500">
+                    <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
                       Current State:
                     </span>
                     <p className="mt-1 flex items-center space-x-2">
@@ -505,7 +505,7 @@ function JobDetails() {
                         {job.state}
                       </span>
                       {job.is_paused && (
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
                           Paused
                         </span>
                       )}
@@ -513,20 +513,20 @@ function JobDetails() {
                   </div>
                   {job.last_run && (
                     <div>
-                      <span className="text-sm font-medium text-gray-500">
+                      <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
                         Last Run:
                       </span>
-                      <p className="mt-1 text-sm text-gray-900">
+                      <p className="mt-1 text-sm text-gray-900 dark:text-gray-300">
                         {new Date(job.last_run).toLocaleString()}
                       </p>
                     </div>
                   )}
                   {job.next_run && (
                     <div>
-                      <span className="text-sm font-medium text-gray-500">
+                      <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
                         Next Run:
                       </span>
-                      <p className="mt-1 text-sm text-gray-900">
+                      <p className="mt-1 text-sm text-gray-900 dark:text-gray-300">
                         {new Date(job.next_run).toLocaleString()}
                       </p>
                     </div>
@@ -539,7 +539,7 @@ function JobDetails() {
       )}
 
       <div className="mb-6">
-        <h2 className="text-lg font-medium text-gray-900 mb-4">Logs</h2>
+        <h2 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Logs</h2>
         {job.state === 'running' ? (
           // Show live logs when job is running
           <LogTerminal logs={[]} liveLog={liveLog} />
@@ -557,13 +557,13 @@ function JobDetails() {
 
         {executions.length > 1 && (
           <div className="mt-4">
-            <h3 className="text-md font-medium text-gray-900 mb-2">Previous Executions</h3>
-            <div className="bg-white rounded-lg shadow overflow-hidden">
-              <div className="divide-y divide-gray-200 max-h-60 overflow-y-auto">
+            <h3 className="text-md font-medium text-gray-900 dark:text-white mb-2">Previous Executions</h3>
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+              <div className="divide-y divide-gray-200 dark:divide-gray-700 max-h-60 overflow-y-auto">
                 {executions.slice(1).map((execution) => (
                   <div
                     key={execution.timestamp}
-                    className="px-4 py-3 hover:bg-gray-50 cursor-pointer"
+                    className="px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
                     onClick={async () => {
                       if (!executionLogs[execution.timestamp]) {
                         try {
@@ -592,7 +592,7 @@ function JobDetails() {
                     }}
                   >
                     <div className="flex justify-between items-center">
-                      <div className="text-sm text-gray-900">
+                      <div className="text-sm text-gray-900 dark:text-gray-300">
                         {new Date(execution.timestamp).toLocaleString()}
                       </div>
                       <div className="flex items-center space-x-2">
@@ -603,7 +603,7 @@ function JobDetails() {
                         >
                           {execution.state}
                         </span>
-                        <span className="text-xs text-gray-500">
+                        <span className="text-xs text-gray-500 dark:text-gray-400">
                           {execution.duration ? `${execution.duration.toFixed(1)}s` : ''}
                         </span>
                       </div>

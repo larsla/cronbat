@@ -57,34 +57,34 @@ function JobCard({ job }) {
   const getStateColor = (state) => {
     switch (state) {
       case 'running':
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
       case 'success':
-        return 'bg-green-100 text-green-800';
+        return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
       case 'failed':
-        return 'bg-red-100 text-red-800';
+        return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
     }
   };
 
   return (
     <Link
       to={`/jobs/${job.id}`}
-      className="block bg-white rounded-lg shadow hover:shadow-md transition-shadow duration-200"
+      className="block bg-white dark:bg-gray-800 rounded-lg shadow hover:shadow-md transition-shadow duration-200"
     >
       <div className="p-5">
         <div className="flex justify-between items-start">
           <div>
-            <h3 className="text-lg font-semibold text-gray-900 truncate">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white truncate">
               {job.name}
             </h3>
-            <p className="mt-1 text-sm text-gray-600 truncate max-w-xs">
+            <p className="mt-1 text-sm text-gray-600 dark:text-gray-300 truncate max-w-xs">
               {job.command}
             </p>
           </div>
           <div className="flex items-center space-x-2">
             {isPaused && (
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
                 Paused
               </span>
             )}
@@ -98,28 +98,28 @@ function JobCard({ job }) {
           </div>
         </div>
 
-        <div className="mt-4 text-sm text-gray-500">
+        <div className="mt-4 text-sm text-gray-500 dark:text-gray-400">
           <div className="flex justify-between items-center">
             <div>
               {job.trigger_type === 'dependency' ? (
                 <p>
-                  <span className="font-medium">Triggered by:</span>{' '}
+                  <span className="font-medium dark:text-gray-300">Triggered by:</span>{' '}
                   {job.parent_jobs ? job.parent_jobs.map(p => p.name).join(', ') : 'Other jobs'}
                 </p>
               ) : (
                 <p>
-                  <span className="font-medium">Schedule:</span> {job.schedule}
+                  <span className="font-medium dark:text-gray-300">Schedule:</span> {job.schedule}
                 </p>
               )}
               {job.last_run && (
                 <p>
-                  <span className="font-medium">Last Run:</span>{' '}
+                  <span className="font-medium dark:text-gray-300">Last Run:</span>{' '}
                   {new Date(job.last_run).toLocaleString()}
                 </p>
               )}
               {job.next_run && (
                 <p>
-                  <span className="font-medium">Next Run:</span>{' '}
+                  <span className="font-medium dark:text-gray-300">Next Run:</span>{' '}
                   {new Date(job.next_run).toLocaleString()}
                 </p>
               )}

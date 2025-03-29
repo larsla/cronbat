@@ -144,10 +144,10 @@ function CreateJob() {
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Create New Job</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Create New Job</h1>
       </div>
 
-      <div className="bg-white rounded-lg shadow">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
         <div className="p-6">
           {errors.submit && (
             <div className="mb-4 bg-red-50 border-l-4 border-red-500 p-4 rounded">
@@ -179,7 +179,7 @@ function CreateJob() {
               <div>
                 <label
                   htmlFor="name"
-                  className="block text-sm font-medium text-gray-700"
+                  className="block text-sm font-medium text-gray-700 dark:text-gray-300"
                 >
                   Job Name
                 </label>
@@ -193,7 +193,7 @@ function CreateJob() {
                     errors.name
                       ? 'border-red-300 focus:border-red-500 focus:ring-red-500'
                       : 'border-gray-300 focus:border-cronbat-500 focus:ring-cronbat-500'
-                  }`}
+                  } dark:bg-gray-700 dark:border-gray-600 dark:text-white`}
                   placeholder="Daily Backup"
                 />
                 {errors.name && (
@@ -204,7 +204,7 @@ function CreateJob() {
               <div>
                 <label
                   htmlFor="command"
-                  className="block text-sm font-medium text-gray-700"
+                  className="block text-sm font-medium text-gray-700 dark:text-gray-300"
                 >
                   Command
                 </label>
@@ -218,7 +218,7 @@ function CreateJob() {
                     errors.command
                       ? 'border-red-300 focus:border-red-500 focus:ring-red-500'
                       : 'border-gray-300 focus:border-cronbat-500 focus:ring-cronbat-500'
-                  }`}
+                  } dark:bg-gray-700 dark:border-gray-600 dark:text-white`}
                   placeholder="bash /path/to/script.sh"
                 />
                 {errors.command && (
@@ -227,7 +227,7 @@ function CreateJob() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                   Trigger Type
                 </label>
                 <div className="mt-2 space-y-2">
@@ -241,7 +241,7 @@ function CreateJob() {
                       onChange={handleChange}
                       className="h-4 w-4 text-cronbat-600 focus:ring-cronbat-500 border-gray-300"
                     />
-                    <label htmlFor="trigger-schedule" className="ml-3 block text-sm font-medium text-gray-700">
+                    <label htmlFor="trigger-schedule" className="ml-3 block text-sm font-medium text-gray-700 dark:text-gray-300">
                       Schedule (Cron)
                     </label>
                   </div>
@@ -255,7 +255,7 @@ function CreateJob() {
                       onChange={handleChange}
                       className="h-4 w-4 text-cronbat-600 focus:ring-cronbat-500 border-gray-300"
                     />
-                    <label htmlFor="trigger-dependency" className="ml-3 block text-sm font-medium text-gray-700">
+                    <label htmlFor="trigger-dependency" className="ml-3 block text-sm font-medium text-gray-700 dark:text-gray-300">
                       After successful job execution
                     </label>
                   </div>
@@ -266,7 +266,7 @@ function CreateJob() {
                 <div>
                   <label
                     htmlFor="schedule"
-                    className="block text-sm font-medium text-gray-700"
+                    className="block text-sm font-medium text-gray-700 dark:text-gray-300"
                   >
                     Schedule (Cron Expression)
                   </label>
@@ -280,10 +280,10 @@ function CreateJob() {
                       errors.schedule
                         ? 'border-red-300 focus:border-red-500 focus:ring-red-500'
                         : 'border-gray-300 focus:border-cronbat-500 focus:ring-cronbat-500'
-                    }`}
+                    } dark:bg-gray-700 dark:border-gray-600 dark:text-white`}
                     placeholder="0 0 * * *"
                   />
-                  <p className="mt-1 text-sm text-gray-500">
+                  <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
                     Format: minute hour day-of-month month day-of-week
                   </p>
                   {errors.schedule && (
@@ -294,20 +294,20 @@ function CreateJob() {
 
               {formData.trigger_type === 'dependency' && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                     Run after successful completion of:
                   </label>
-                  <div className="mt-2 border border-gray-300 rounded-md p-4 max-h-60 overflow-y-auto">
+                  <div className="mt-2 border border-gray-300 dark:border-gray-600 rounded-md p-4 max-h-60 overflow-y-auto dark:bg-gray-700">
                     {isLoading ? (
                       <div className="text-center py-4">
                         <svg className="animate-spin h-5 w-5 text-cronbat-500 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                         </svg>
-                        <p className="mt-2 text-sm text-gray-500">Loading jobs...</p>
+                        <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">Loading jobs...</p>
                       </div>
                     ) : jobs.length === 0 ? (
-                      <p className="text-sm text-gray-500 py-2">No jobs available to select as dependencies.</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 py-2">No jobs available to select as dependencies.</p>
                     ) : (
                       <div className="space-y-2">
                         {jobs.map(job => (
@@ -321,8 +321,8 @@ function CreateJob() {
                               className="h-4 w-4 text-cronbat-600 focus:ring-cronbat-500 border-gray-300 rounded mt-1"
                             />
                             <label htmlFor={`job-${job.id}`} className="ml-3 text-sm">
-                              <span className="font-medium text-gray-700">{job.name}</span>
-                              <p className="text-gray-500">{job.command}</p>
+                              <span className="font-medium text-gray-700 dark:text-gray-300">{job.name}</span>
+                              <p className="text-gray-500 dark:text-gray-400">{job.command}</p>
                             </label>
                           </div>
                         ))}
@@ -338,7 +338,7 @@ function CreateJob() {
               <div>
                 <label
                   htmlFor="description"
-                  className="block text-sm font-medium text-gray-700"
+                  className="block text-sm font-medium text-gray-700 dark:text-gray-300"
                 >
                   Description (Optional)
                 </label>
@@ -348,7 +348,7 @@ function CreateJob() {
                   rows="3"
                   value={formData.description}
                   onChange={handleChange}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-cronbat-500 focus:ring-cronbat-500"
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-cronbat-500 focus:ring-cronbat-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300"
                   placeholder="Daily backup of database files"
                 ></textarea>
               </div>
@@ -357,7 +357,7 @@ function CreateJob() {
                 <button
                   type="button"
                   onClick={() => navigate('/')}
-                  className="mr-3 px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cronbat-500"
+                  className="mr-3 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cronbat-500"
                 >
                   Cancel
                 </button>

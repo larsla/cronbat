@@ -32,8 +32,8 @@ function ExecutionLogViewer({ jobId, timestamp }) {
 
   if (!jobId || !timestamp) {
     return (
-      <div className="bg-white rounded-lg shadow p-6 text-center">
-        <p className="text-gray-500">Select an execution to view its logs</p>
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 text-center">
+        <p className="text-gray-500 dark:text-gray-400">Select an execution to view its logs</p>
       </div>
     );
   }
@@ -43,7 +43,7 @@ function ExecutionLogViewer({ jobId, timestamp }) {
       <div className="flex justify-center items-center h-64">
         <div className="animate-pulse flex flex-col items-center">
           <div className="h-8 w-8 bg-cronbat-500 rounded-full"></div>
-          <div className="mt-2 text-sm text-cronbat-700">Loading logs...</div>
+          <div className="mt-2 text-sm text-cronbat-700 dark:text-cronbat-300">Loading logs...</div>
         </div>
       </div>
     );
@@ -51,11 +51,11 @@ function ExecutionLogViewer({ jobId, timestamp }) {
 
   if (error) {
     return (
-      <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded">
+      <div className="bg-red-50 dark:bg-red-900 border-l-4 border-red-500 p-4 rounded">
         <div className="flex">
           <div className="flex-shrink-0">
             <svg
-              className="h-5 w-5 text-red-500"
+              className="h-5 w-5 text-red-500 dark:text-red-300"
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 20 20"
               fill="currentColor"
@@ -69,7 +69,7 @@ function ExecutionLogViewer({ jobId, timestamp }) {
             </svg>
           </div>
           <div className="ml-3">
-            <p className="text-sm text-red-700">{error}</p>
+            <p className="text-sm text-red-700 dark:text-red-200">{error}</p>
           </div>
         </div>
       </div>
@@ -79,8 +79,8 @@ function ExecutionLogViewer({ jobId, timestamp }) {
   return (
     <div className="mt-4">
       <div className="flex justify-between items-center mb-2">
-        <h3 className="text-base font-medium text-gray-900">Execution Log</h3>
-        <div className="text-xs text-gray-500">
+        <h3 className="text-base font-medium text-gray-900 dark:text-white">Execution Log</h3>
+        <div className="text-xs text-gray-500 dark:text-gray-400">
           {new Date(timestamp).toLocaleString()}
         </div>
       </div>

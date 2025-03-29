@@ -12,7 +12,7 @@ function ExecutionHistoryPage() {
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Execution History</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Execution History</h1>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -26,8 +26,8 @@ function ExecutionHistoryPage() {
               timestamp={selectedExecution.timestamp}
             />
           ) : (
-            <div className="bg-white rounded-lg shadow p-6 text-center">
-              <p className="text-gray-500">Select an execution to view its logs</p>
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 text-center">
+              <p className="text-gray-500 dark:text-gray-400">Select an execution to view its logs</p>
             </div>
           )}
         </div>

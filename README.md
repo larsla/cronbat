@@ -11,6 +11,7 @@ CronBat is a web application for scheduling, running, and monitoring tasks. It p
 - Live streaming of task logs
 - Manual triggering of tasks
 - Responsive UI built with React and Tailwind CSS
+- Dark mode support with persistent user preference
 - Job dependencies - trigger jobs based on successful completion of other jobs
 - Visual workflow representation showing job dependencies
 - Automatic cleanup of old execution logs with configurable retention

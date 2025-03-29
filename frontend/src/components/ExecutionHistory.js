@@ -27,13 +27,13 @@ function ExecutionHistory({ onExecutionSelect }) {
   const getStateColor = (state) => {
     switch (state) {
       case 'running':
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
       case 'success':
-        return 'bg-green-100 text-green-800';
+        return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
       case 'failed':
-        return 'bg-red-100 text-red-800';
+        return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
     }
   };
 
@@ -56,7 +56,7 @@ function ExecutionHistory({ onExecutionSelect }) {
       <div className="flex justify-center items-center h-32">
         <div className="animate-pulse flex flex-col items-center">
           <div className="h-8 w-8 bg-cronbat-500 rounded-full"></div>
-          <div className="mt-2 text-sm text-cronbat-700">Loading history...</div>
+          <div className="mt-2 text-sm text-cronbat-700 dark:text-cronbat-300">Loading history...</div>
         </div>
       </div>
     );
@@ -64,11 +64,11 @@ function ExecutionHistory({ onExecutionSelect }) {
 
   if (error) {
     return (
-      <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded">
+      <div className="bg-red-50 dark:bg-red-900 border-l-4 border-red-500 p-4 rounded">
         <div className="flex">
           <div className="flex-shrink-0">
             <svg
-              className="h-5 w-5 text-red-500"
+              className="h-5 w-5 text-red-500 dark:text-red-300"
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 20 20"
               fill="currentColor"
@@ -82,7 +82,7 @@ function ExecutionHistory({ onExecutionSelect }) {
             </svg>
           </div>
           <div className="ml-3">
-            <p className="text-sm text-red-700">{error}</p>
+            <p className="text-sm text-red-700 dark:text-red-200">{error}</p>
           </div>
         </div>
       </div>
@@ -91,9 +91,9 @@ function ExecutionHistory({ onExecutionSelect }) {
 
   if (executions.length === 0) {
     return (
-      <div className="bg-white rounded-lg shadow p-4 text-center">
-        <h3 className="text-base font-medium text-gray-900">No execution history</h3>
-        <p className="mt-1 text-sm text-gray-500">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 text-center">
+        <h3 className="text-base font-medium text-gray-900 dark:text-white">No execution history</h3>
+        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
           Run a job to see its execution history here.
         </p>
       </div>
@@ -101,19 +101,19 @@ function ExecutionHistory({ onExecutionSelect }) {
   }
 
   return (
-    <div className="bg-white rounded-lg shadow overflow-hidden">
-      <div className="px-4 py-3 border-b border-gray-200">
-        <h3 className="text-base font-medium text-gray-900">Execution History</h3>
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+      <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+        <h3 className="text-base font-medium text-gray-900 dark:text-white">Execution History</h3>
       </div>
-      <div className="divide-y divide-gray-200 max-h-96 overflow-y-auto">
+      <div className="divide-y divide-gray-200 dark:divide-gray-700 max-h-96 overflow-y-auto">
         {executions.map((execution) => (
           <div
             key={`${execution.job_id}-${execution.timestamp}`}
-            className={`px-4 py-3 hover:bg-gray-50 cursor-pointer ${
+            className={`px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer ${
               selectedExecution &&
               selectedExecution.job_id === execution.job_id &&
               selectedExecution.timestamp === execution.timestamp
-                ? 'bg-gray-50'
+                ? 'bg-gray-50 dark:bg-gray-700'
                 : ''
             }`}
             onClick={() => {
@@ -127,12 +127,12 @@ function ExecutionHistory({ onExecutionSelect }) {
               <div>
                 <Link
                   to={`/jobs/${execution.job_id}`}
-                  className="text-sm font-medium text-cronbat-600 hover:text-cronbat-800"
+                  className="text-sm font-medium text-cronbat-600 hover:text-cronbat-800 dark:text-cronbat-400 dark:hover:text-cronbat-300"
                   onClick={(e) => e.stopPropagation()}
                 >
                   {execution.job_name || 'Unknown Job'}
                 </Link>
-                <div className="text-xs text-gray-500">
+                <div className="text-xs text-gray-500 dark:text-gray-400">
                   {new Date(execution.timestamp).toLocaleString()}
                 </div>
               </div>
@@ -144,7 +144,7 @@ function ExecutionHistory({ onExecutionSelect }) {
                 >
                   {execution.state}
                 </span>
-                <span className="text-xs text-gray-500">
+                <span className="text-xs text-gray-500 dark:text-gray-400">
                   {formatDuration(execution.duration)}
                 </span>
               </div>

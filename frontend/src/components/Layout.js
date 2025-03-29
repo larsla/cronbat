@@ -1,14 +1,17 @@
 import React from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { useSocket } from '../contexts/SocketContext';
+import ThemeToggle from './ThemeToggle';
+import { useTheme } from '../contexts/ThemeContext';
 
 function Layout() {
   const location = useLocation();
   const { isConnected } = useSocket();
+  const { darkMode } = useTheme();
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <nav className="bg-cronbat-700 shadow-md">
+    <div className={`min-h-screen ${darkMode ? 'dark bg-gray-900' : 'bg-gray-100'}`}>
+      <nav className="bg-cronbat-700 shadow-md dark:bg-gray-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
             <div className="flex">
@@ -55,7 +58,7 @@ function Layout() {
                 </Link>
               </div>
             </div>
-            <div className="flex items-center">
+            <div className="flex items-center space-x-6">
               <div className="flex items-center">
                 <span className="mr-2 text-sm text-cronbat-100">Status:</span>
                 <span
@@ -67,18 +70,19 @@ function Layout() {
                   {isConnected ? 'Connected' : 'Disconnected'}
                 </span>
               </div>
+              <ThemeToggle />
             </div>
           </div>
         </div>
       </nav>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 dark:text-white">
         <Outlet />
       </main>
 
-      <footer className="bg-white shadow-inner mt-auto">
+      <footer className="bg-white dark:bg-gray-800 shadow-inner mt-auto">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <p className="text-center text-sm text-gray-500">
+          <p className="text-center text-sm text-gray-500 dark:text-gray-400">
             CronBat - Task Scheduling and Monitoring
           </p>
         </div>
