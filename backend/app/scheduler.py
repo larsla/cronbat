@@ -158,6 +158,9 @@ def remove_job(job_id):
     except:
         pass
 
+    # Delete all execution records and log files for the job
+    db.delete_all_job_executions(job_id)
+
     # Remove job from database
     success = db.remove_job(job_id)
     if not success:

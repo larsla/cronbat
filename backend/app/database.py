@@ -410,6 +410,34 @@ class Database:
         finally:
             session.close()
 
+    def delete_all_job_executions(self, job_id):
+        """Delete all execution records and log files for a job"""
+        session = self.Session()
+        try:
+            # Get all executions for the job
+            executions = session.query(Execution).filter_by(job_id=job_id).all()
+
+            for execution in executions:
+                # Delete the log file if it exists
+                if execution.log_file and os.path.exists(execution.log_file):
+                    try:
+                        os.remove(execution.log_file)
+                        print(f"Deleted log file: {execution.log_file}")
+                    except Exception as e:
+                        print(f"Error deleting log file {execution.log_file}: {e}")
+
+                # Delete the execution record
+                session.delete(execution)
+
+            session.commit()
+            return True
+        except Exception as e:
+            print(f"Error deleting job executions: {e}")
+            session.rollback()
+            return False
+        finally:
+            session.close()
+
     def _cleanup_job_executions(self, session, job_id):
         """Helper method to clean up executions for a specific job"""
         # Get all executions for the job, ordered by timestamp (newest first)
