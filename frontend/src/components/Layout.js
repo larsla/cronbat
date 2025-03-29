@@ -13,8 +13,13 @@ function Layout() {
           <div className="flex justify-between h-16">
             <div className="flex">
               <div className="flex-shrink-0 flex items-center">
-                <Link to="/" className="text-white text-xl font-bold">
-                  CronBat
+                <Link to="/" className="flex items-center">
+                  <img
+                    src="/logo.svg"
+                    alt="CronBat Logo"
+                    className="h-8 w-8 mr-2 logo-svg"
+                  />
+                  <span className="text-white text-xl font-bold">CronBat</span>
                 </Link>
               </div>
               <div className="ml-6 flex items-center space-x-4">

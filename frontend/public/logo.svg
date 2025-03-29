@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="currentColor">
+  <!-- Clock face -->
+  <circle cx="100" cy="100" r="80" fill="none" stroke="currentColor" stroke-width="8"/>
+
+  <!-- Clock hands -->
+  <line x1="100" y1="100" x2="100" y2="50" stroke="currentColor" stroke-width="6" stroke-linecap="round"/>
+  <line x1="100" y1="100" x2="130" y2="130" stroke="currentColor" stroke-width="6" stroke-linecap="round"/>
+
+  <!-- Bat wings -->
+  <path d="M100,70 C120,30 160,40 180,70 C160,60 140,70 140,90 C140,70 120,60 100,70" fill="currentColor"/>
+  <path d="M100,70 C80,30 40,40 20,70 C40,60 60,70 60,90 C60,70 80,60 100,70" fill="currentColor"/>
+
+  <!-- Bat ears -->
+  <path d="M90,70 L80,50 L100,70" fill="currentColor"/>
+  <path d="M110,70 L120,50 L100,70" fill="currentColor"/>
+</svg>
