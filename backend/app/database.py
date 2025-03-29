@@ -56,10 +56,11 @@ class Execution(Base):
     job = relationship("Job", back_populates="executions")
 
 class Database:
-    def __init__(self, db_path=None, logs_path=None):
+    def __init__(self, db_path=None, logs_path=None, max_executions_per_job=None):
         # Default paths if not provided
         self.db_path = db_path or os.environ.get('CRONBAT_DB_PATH', 'instance/cronbat.db')
         self.logs_path = logs_path or os.environ.get('CRONBAT_LOGS_PATH', 'instance/logs')
+        self.max_executions_per_job = max_executions_per_job or int(os.environ.get('CRONBAT_MAX_EXECUTIONS', '20'))
 
         # Ensure directories exist
         os.makedirs(os.path.dirname(self.db_path), exist_ok=True)
@@ -382,6 +383,52 @@ class Database:
             return result
         finally:
             session.close()
+
+    def cleanup_old_executions(self, job_id=None):
+        """Clean up old execution records and log files
+
+        If job_id is provided, only clean up executions for that job.
+        Otherwise, clean up executions for all jobs.
+        """
+        session = self.Session()
+        try:
+            if job_id:
+                # Clean up executions for a specific job
+                self._cleanup_job_executions(session, job_id)
+            else:
+                # Clean up executions for all jobs
+                jobs = session.query(Job).all()
+                for job in jobs:
+                    self._cleanup_job_executions(session, job.id)
+
+            session.commit()
+            return True
+        except Exception as e:
+            print(f"Error cleaning up executions: {e}")
+            session.rollback()
+            return False
+        finally:
+            session.close()
+
+    def _cleanup_job_executions(self, session, job_id):
+        """Helper method to clean up executions for a specific job"""
+        # Get all executions for the job, ordered by timestamp (newest first)
+        executions = session.query(Execution).filter_by(job_id=job_id).order_by(Execution.timestamp.desc()).all()
+
+        # Keep the most recent max_executions_per_job executions
+        if len(executions) > self.max_executions_per_job:
+            executions_to_delete = executions[self.max_executions_per_job:]
+
+            for execution in executions_to_delete:
+                # Delete the log file if it exists
+                if execution.log_file and os.path.exists(execution.log_file):
+                    try:
+                        os.remove(execution.log_file)
+                    except Exception as e:
+                        print(f"Error deleting log file {execution.log_file}: {e}")
+
+                # Delete the execution record
+                session.delete(execution)
 
     def _job_to_dict(self, job):
         """Convert Job object to dictionary"""

@@ -15,6 +15,7 @@ def create_app(test_config=None):
         SECRET_KEY=os.environ.get('SECRET_KEY', 'dev'),
         DB_PATH=os.environ.get('CRONBAT_DB_PATH', os.path.join(app.instance_path, 'cronbat.db')),
         LOGS_PATH=os.environ.get('CRONBAT_LOGS_PATH', os.path.join(app.instance_path, 'logs')),
+        MAX_EXECUTIONS_PER_JOB=int(os.environ.get('CRONBAT_MAX_EXECUTIONS', '20')),
     )
 
     if test_config is None:

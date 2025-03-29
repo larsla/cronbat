@@ -260,6 +260,9 @@ def execute_job(job_id):
         log_content=log_output
     )
 
+    # Clean up old executions for this job
+    db.cleanup_old_executions(job_id)
+
     # Emit job state changed event
     socketio.emit('job_state_changed', {'id': job_id, 'state': job_states[job_id]})
 

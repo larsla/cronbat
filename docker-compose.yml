@@ -10,6 +10,7 @@ services:
       - FLASK_DEBUG=false
       - HOST=0.0.0.0
       - PORT=5000
+      - CRONBAT_MAX_EXECUTIONS=20
     restart: unless-stopped
     volumes:
       - backend_data:/app/instance

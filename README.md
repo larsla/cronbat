@@ -13,6 +13,7 @@ CronBat is a web application for scheduling, running, and monitoring tasks. It p
 - Responsive UI built with React and Tailwind CSS
 - Job dependencies - trigger jobs based on successful completion of other jobs
 - Visual workflow representation showing job dependencies
+- Automatic cleanup of old execution logs with configurable retention
 
 ## Architecture
 
@@ -112,6 +113,7 @@ Docker images are automatically built and published to GitHub Container Registry
 - `FLASK_DEBUG`: Enable debug mode (set to "true" for development)
 - `HOST`: Host to bind the server to
 - `PORT`: Port to run the server on
+- `CRONBAT_MAX_EXECUTIONS`: Maximum number of execution records to keep per job (default: 20)
 
 ### Frontend
 
