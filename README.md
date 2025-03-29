@@ -16,6 +16,10 @@ CronBat is a web application for scheduling, running, and monitoring tasks. It p
 - Visual workflow representation showing job dependencies
 - Automatic cleanup of old execution logs with configurable retention
 
+## Screenshot
+![Dashboard](screenshots/08_dashboard_dependent_job_with_exec.png)
+See more screenshots under [screenshots/](screenshots/).
+
 ## Architecture
 
 - **Backend**: Python with Flask, Flask-SocketIO for real-time updates
