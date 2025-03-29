@@ -83,7 +83,14 @@ function Layout() {
       <footer className="bg-white dark:bg-gray-800 shadow-inner mt-auto">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <p className="text-center text-sm text-gray-500 dark:text-gray-400">
-            CronBat - Task Scheduling and Monitoring
+            <a
+              href="https://github.com/larsla/cronbat"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-cronbat-600 dark:hover:text-cronbat-400 transition-colors"
+            >
+              CronBat - Task Scheduling and Monitoring
+            </a>
           </p>
         </div>
       </footer>
