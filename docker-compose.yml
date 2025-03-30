@@ -18,7 +18,7 @@ services:
   frontend:
     image: ghcr.io/larsla/cronbat-frontend:${CRONBAT_VERSION:-latest}
     ports:
-      - "8000:8080"
+      - "8000:80"
     depends_on:
       - backend
     restart: unless-stopped
