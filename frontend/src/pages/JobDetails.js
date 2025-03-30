@@ -323,10 +323,10 @@ function JobDetails() {
       </div>
 
       {isEditing ? (
-        <div className="bg-white rounded-lg shadow mb-6">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow mb-6">
           <div className="p-6">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-medium text-gray-900">Edit Job</h2>
+              <h2 className="text-lg font-medium text-gray-900 dark:text-white">Edit Job</h2>
               <button
                 onClick={async () => {
                   // Validate form
@@ -390,7 +390,7 @@ function JobDetails() {
             </div>
             <div className="space-y-4">
               <div>
-                <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                   Name
                 </label>
                 <input
@@ -398,11 +398,11 @@ function JobDetails() {
                   id="name"
                   value={editedJob?.name || ''}
                   onChange={(e) => setEditedJob({...editedJob, name: e.target.value})}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm"
                 />
               </div>
               <div>
-                <label htmlFor="command" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="command" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                   Command
                 </label>
                 <textarea
@@ -410,11 +410,11 @@ function JobDetails() {
                   value={editedJob?.command || ''}
                   onChange={(e) => setEditedJob({...editedJob, command: e.target.value})}
                   rows={3}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm font-mono"
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm font-mono"
                 />
               </div>
               <div>
-                <label htmlFor="schedule" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="schedule" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                   Schedule (Cron Expression)
                 </label>
                 <input
@@ -422,14 +422,14 @@ function JobDetails() {
                   id="schedule"
                   value={editedJob?.schedule || ''}
                   onChange={(e) => setEditedJob({...editedJob, schedule: e.target.value})}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm font-mono"
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm font-mono"
                 />
-                <p className="mt-1 text-xs text-gray-500">
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                   Format: minute hour day-of-month month day-of-week (e.g., "0 * * * *" for every hour)
                 </p>
               </div>
               <div>
-                <label htmlFor="description" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="description" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                   Description (Recommended)
                 </label>
                 <textarea
@@ -437,9 +437,9 @@ function JobDetails() {
                   value={editedJob?.description || ''}
                   onChange={(e) => setEditedJob({...editedJob, description: e.target.value})}
                   rows={2}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm"
                 />
-                <p className="mt-1 text-xs text-gray-500">
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                   A short description will be displayed on the dashboard instead of the command.
                 </p>
               </div>
