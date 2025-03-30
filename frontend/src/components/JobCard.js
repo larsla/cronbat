@@ -78,9 +78,11 @@ function JobCard({ job }) {
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white truncate">
               {job.name}
             </h3>
-            <p className="mt-1 text-sm text-gray-600 dark:text-gray-300 truncate max-w-xs">
-              {job.command}
-            </p>
+            {job.description && (
+              <p className="mt-1 text-sm text-gray-600 dark:text-gray-300 truncate max-w-xs">
+                {job.description}
+              </p>
+            )}
           </div>
           <div className="flex items-center space-x-2">
             {isPaused && (

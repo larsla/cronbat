@@ -216,9 +216,12 @@ def execute_job(job_id):
     duration = None
 
     try:
+        # Process multi-line commands by joining them with semicolons
+        processed_command = '; '.join(command.splitlines())
+
         # Execute the command
         process = subprocess.Popen(
-            command,
+            processed_command,
             shell=True,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,

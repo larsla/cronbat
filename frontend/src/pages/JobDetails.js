@@ -430,7 +430,7 @@ function JobDetails() {
               </div>
               <div>
                 <label htmlFor="description" className="block text-sm font-medium text-gray-700">
-                  Description (Optional)
+                  Description (Recommended)
                 </label>
                 <textarea
                   id="description"
@@ -439,6 +439,9 @@ function JobDetails() {
                   rows={2}
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                 />
+                <p className="mt-1 text-xs text-gray-500">
+                  A short description will be displayed on the dashboard instead of the command.
+                </p>
               </div>
             </div>
           </div>
@@ -456,9 +459,9 @@ function JobDetails() {
                     <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
                       Command:
                     </span>
-                    <p className="mt-1 text-sm text-gray-900 dark:text-gray-300 font-mono bg-gray-100 dark:bg-gray-700 p-2 rounded">
+                    <pre className="mt-1 text-sm text-gray-900 dark:text-gray-300 font-mono bg-gray-100 dark:bg-gray-700 p-2 rounded whitespace-pre-wrap overflow-auto">
                       {job.command}
-                    </p>
+                    </pre>
                   </div>
                   {job.trigger_type === 'dependency' ? (
                     <div>

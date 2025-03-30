@@ -208,19 +208,25 @@ function CreateJob() {
                 >
                   Command
                 </label>
-                <input
-                  type="text"
+                <textarea
                   name="command"
                   id="command"
+                  rows="4"
                   value={formData.command}
                   onChange={handleChange}
                   className={`mt-1 block w-full rounded-md shadow-sm ${
                     errors.command
                       ? 'border-red-300 focus:border-red-500 focus:ring-red-500'
                       : 'border-gray-300 focus:border-cronbat-500 focus:ring-cronbat-500'
-                  } dark:bg-gray-700 dark:border-gray-600 dark:text-white`}
-                  placeholder="bash /path/to/script.sh"
-                />
+                  } dark:bg-gray-700 dark:border-gray-600 dark:text-white font-mono`}
+                  placeholder="cd /path/to/directory
+npm install
+npm run build
+echo 'Build completed'"
+                ></textarea>
+                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                  Each line will be executed as a separate command, similar to a shell script.
+                </p>
                 {errors.command && (
                   <p className="mt-2 text-sm text-red-600">{errors.command}</p>
                 )}
@@ -340,7 +346,7 @@ function CreateJob() {
                   htmlFor="description"
                   className="block text-sm font-medium text-gray-700 dark:text-gray-300"
                 >
-                  Description (Optional)
+                  Description (Recommended)
                 </label>
                 <textarea
                   name="description"
@@ -351,6 +357,9 @@ function CreateJob() {
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-cronbat-500 focus:ring-cronbat-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300"
                   placeholder="Daily backup of database files"
                 ></textarea>
+                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                  A short description will be displayed on the dashboard instead of the command.
+                </p>
               </div>
 
               <div className="flex justify-end">
